@@ -11,7 +11,7 @@
     "https://www.google.com/",
     "https://google.com/",
     "http://localhost/*",
-    "https://your-production-url.com/"
+    "https://searchplusplus-server-production.up.railway.app/"
   ],
   "background": {
     "service_worker": "background.js"

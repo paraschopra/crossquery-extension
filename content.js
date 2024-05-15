@@ -89,7 +89,7 @@ function parseSearchResults(html) {
         const titleElement = result.querySelector('h3');
         const linkElement = result.querySelector('a');
         const descriptionElement = result.querySelectorAll("span");
-        console.log(descriptionElement);
+        //console.log(descriptionElement);
         //const snippetElements = result.querySelectorAll('.g span:not([class])');
 
         const title = titleElement ? titleElement.textContent : '';
@@ -104,7 +104,18 @@ function parseSearchResults(html) {
 }
 
 async function summarizeResults(results, searchQuery) {
-    const response = await fetch('http://localhost:4000/summarize', {
+
+    const isLocal = false; // make it true when testing localhost server, on production false
+
+    const apiUrl = isLocal
+  ? 'http://localhost:4000/summarize'
+  : 'https://searchplusplus-server-production.up.railway.app/summarize';
+
+    
+
+    //console.log(apiUrl);
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -133,7 +144,7 @@ window.addEventListener('load', async () => {
     const searchInput = document.querySelector('input[name="q"]');
     const searchQuery = searchInput.value;
 
-    console.log('Sending search request to background.js');
+    //console.log('Sending search request to background.js');
 
     try {
         const response = await chrome.runtime.sendMessage({
@@ -141,17 +152,17 @@ window.addEventListener('load', async () => {
             query: searchQuery
         });
 
-        console.log('Received response from background.js:', response);
+        //console.log('Received response from background.js:', response);
         if (response && response.html) {
             const html = response.html;
-            console.log('Parsing search results');
+            //console.log('Parsing search results');
             const results = parseSearchResults(html);
-            console.log('Search results:', results);
+            //console.log('Search results:', results);
             updateSidebar(results);
 
-            console.log('Summarizing search results');
+            //console.log('Summarizing search results');
             const summary = await summarizeResults(results, searchQuery);
-            console.log('Summary:', summary);
+            //console.log('Summary:', summary);
         } else {
             console.log('No results found.');
         }
