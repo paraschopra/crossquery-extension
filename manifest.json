@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Google Search Extension",
+  "version": "1.0",
+  "description": "Performs a Google search in the background and displays the top result.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.google.com/",
+    "https://google.com/",
+    "http://localhost/*",
+    "https://your-production-url.com/"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.google.com/search?*",
+      "https://google.com/search?*"],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
