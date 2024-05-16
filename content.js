@@ -8,45 +8,49 @@
 
 
 
-let topResultUrl = null;
+const isLocal = false; // make it true when testing localhost server, on production false
 
-// sk-proj-nTz8yvpnXHd4rXfNb9dzT3BlbkFJl7IgRb1t4gup6Wea7BZV
+let topResultUrl = null;
 
 function createSidebar() {
     const sidebar = document.createElement('div');
     sidebar.id = 'custom-sidebar';
-    sidebar.style.position = 'fixed';
+    sidebar.style.position = 'absolute';
     sidebar.style.top = '100px';
     sidebar.style.right = '50px';
     sidebar.style.width = '400px';
     sidebar.style.padding = '10px';
-    sidebar.style.maxHeight = '90vh';
-    sidebar.style.overflowY = 'auto';
     sidebar.style.backgroundColor = '#fafafa';
     sidebar.style.border = '1px solid #ccc';
     sidebar.style.zIndex = '9999';
     sidebar.style.color = '#4d5156';
     sidebar.style.lineHeight = '1.3';
-
+    sidebar.style.height = 'fit-content';
+  
     const summaryElement = document.createElement('div');
     summaryElement.id = 'summary-element';
-    summaryElement.style.minHeight = '100px';
     summaryElement.style.boxSizing = 'border-box';
     summaryElement.style.fontSize = '17px';
     summaryElement.style.lineHeight = '1.58';
     sidebar.appendChild(summaryElement);
-
+  
     const resultsList = document.createElement('ul');
     resultsList.id = 'results-list';
     resultsList.style.listStyleType = 'none';
     sidebar.appendChild(resultsList);
 
-   
+    const insertIntoDiv = document.querySelector("div#rcnt");
+    if(insertIntoDiv){
+        sidebar.style.position = 'inherit';
+        sidebar.style.zIndex = '0';
+        sidebar.style.marginLeft = '25px';
+        sidebar.style.marginTop = '25px';
+        insertIntoDiv.appendChild(sidebar);
+    } else {
+        document.body.appendChild(sidebar);
+    }
 
-
-
-    document.body.appendChild(sidebar);
-}
+  }
 
 
 function updateSidebar(results) {
@@ -74,7 +78,7 @@ function updateSummary(summary) {
   });
     if (summaryElement) {
         summaryElement.innerHTML = `
-        <h3>TLDR from Reddit</h3>
+        <h3 style='font-weight:600'>TLDR from Reddit</h3>
         <p>${summaryReplaced}</p>
       `;
     }
@@ -105,15 +109,13 @@ function parseSearchResults(html) {
 
 async function summarizeResults(results, searchQuery) {
 
-    const isLocal = false; // make it true when testing localhost server, on production false
-
     const apiUrl = isLocal
   ? 'http://localhost:4000/summarize'
   : 'https://searchplusplus-server-production.up.railway.app/summarize';
 
     
 
-    //console.log(apiUrl);
+    console.log(apiUrl);
 
     const response = await fetch(apiUrl, {
       method: 'POST',

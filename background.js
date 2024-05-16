@@ -1,7 +1,8 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'performSearch') {
       const searchQuery = message.query;
-      const modifiedQuery = `${searchQuery} (site:ycombinator.com OR site:reddit.com)`;
+      //const modifiedQuery = `${searchQuery} (site:ycombinator.com OR site:reddit.com)`;
+      const modifiedQuery = `${searchQuery} site:reddit.com`;
       const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(modifiedQuery)}`;
   
       //console.log('Received search request:', message);
