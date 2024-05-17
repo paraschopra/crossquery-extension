@@ -20,7 +20,7 @@ function createSidebar() {
     sidebar.style.padding = '10px';
     sidebar.style.backgroundColor = '#fafafa';
     sidebar.style.border = '1px solid #ccc';
-    sidebar.style.zIndex = '1';
+    sidebar.style.zIndex = '127';
     sidebar.style.color = '#4d5156';
     sidebar.style.lineHeight = '1.3';
     sidebar.style.overflowY = 'auto';
