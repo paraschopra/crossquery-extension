@@ -1,17 +1,18 @@
 {
   "manifest_version": 3,
-  "name": "Google Search Extension",
+  "name": "CrossQuery",
   "version": "1.0",
-  "description": "Performs a Google search in the background and displays the top result.",
+  "description": "Enhanced Google search experience with summaries from reddit and other websites",
   "permissions": [
-    "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "host_permissions": [
     "https://www.google.com/",
     "https://google.com/",
     "http://localhost/*",
-    "https://searchplusplus-server-production.up.railway.app/"
+    "https://searchplusplus-server-production.up.railway.app/",
+    "https://crossquery.invertedpassion.com/"
   ],
   "background": {
     "service_worker": "background.js"
@@ -22,7 +23,8 @@
       "https://google.com/search?*"],
       "js": ["content.js"]
     }
-  ],
+  ], 
+  "options_page": "settings.html",
   "action": {
     "default_popup": "popup.html"
   }

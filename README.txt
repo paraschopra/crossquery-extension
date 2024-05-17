@@ -8,4 +8,5 @@ Link to extension: https://drive.google.com/file/d/1owuoExeBtzx6B-DR6GvONhQcoTtR
 - Select the extracted folder (searchplusplus-extension) (ignore _MACOSX)
 - Go to Google.com and search for something
 
-Would love feedback :)
+I will be developing it continuously, so if you want to share feedback or new ideas, join this WA group:
+https://t.co/TnfFxwRFQi
