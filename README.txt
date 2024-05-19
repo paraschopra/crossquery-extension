@@ -1,3 +1,7 @@
+zip -r dist.zip *
+
+
+
 Link to extension: https://drive.google.com/file/d/1owuoExeBtzx6B-DR6GvONhQcoTtR5H0M/view?usp=sharing
 
 - Download searchplusplus-extension.zip from the link above
