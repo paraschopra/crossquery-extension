@@ -9,6 +9,90 @@
 
 
 const isLocal = false; // make it true when testing localhost server, on production false
+let isDarkMode = false;
+let linkColorDark = '#99c3ff';
+let linkColorLight = 'blue';
+
+function applyDarkModeStyles() {
+    const sidebar = document.getElementById('custom-sidebar');
+    if (!sidebar) return;
+
+    console.log("Dark moade");
+    isDarkMode = true;
+
+    sidebar.style.backgroundColor = '#333';
+    sidebar.style.color = '#fff';
+    sidebar.style.border = '1px solid #444';
+
+    const links = sidebar.querySelectorAll('a');
+    links.forEach(link => {
+        link.style.color = '#99c3ff';
+    });
+
+    const madeBySection = sidebar.querySelector('div');
+    if (madeBySection) {
+        madeBySection.style.color = '#bbb';
+    }
+}
+
+function applyLightModeStyles() {
+    const sidebar = document.getElementById('custom-sidebar');
+    if (!sidebar) return;
+
+    console.log("Light mode");
+
+    isDarkMode = false;
+
+    sidebar.style.backgroundColor = '#fafafa';
+    sidebar.style.color = '#4d5156';
+    sidebar.style.border = '1px solid #ccc';
+
+    const links = sidebar.querySelectorAll('a');
+    links.forEach(link => {
+        link.style.color = 'blue';
+    });
+
+    const madeBySection = sidebar.querySelector('div');
+    if (madeBySection) {
+        madeBySection.style.color = '#888';
+    }
+}
+
+function applyColorScheme()
+{
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    if (darkModeMediaQuery.matches) {
+        applyDarkModeStyles();
+    } else {
+        applyLightModeStyles();
+    }
+}
+
+function detectColorScheme() {
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    if (darkModeMediaQuery.matches) {
+        applyDarkModeStyles();
+    } else {
+        applyLightModeStyles();
+    }
+
+    darkModeMediaQuery.addEventListener('change', (e) => {
+        if (e.matches) {
+            applyDarkModeStyles();
+        } else {
+            applyLightModeStyles();
+        }
+    });
+}
+
+function isSearchEnabled() {
+    return new Promise((resolve) => {
+        chrome.storage.sync.get('searchEnabled', (data) => {
+            console.log("Search enabled", data.searchEnabled);
+            resolve(data.searchEnabled !== false); // default to true if not set
+        });
+    });
+}
 
 function createSidebar() {
     const sidebar = document.createElement('div');
@@ -72,6 +156,9 @@ sidebar.appendChild(closeButton);
                 const searchQuery = searchInput.value;
 
                 try {
+
+
+                    
                     console.log("Clicked on", website, "with query ", searchQuery);
                     hideSidebarStuff();
                     const response = await chrome.runtime.sendMessage({
@@ -87,12 +174,12 @@ sidebar.appendChild(closeButton);
                     allWebsiteLinks.forEach(link => {
                         link.style.fontWeight = 'normal';
                         link.style.textDecoration = 'underline';
-                        link.style.color = 'blue';
+                        link.style.color = isDarkMode ? linkColorDark : linkColorLight;
                     });
 
                     websiteLink.style.fontWeight = 'bold';
                     websiteLink.style.textDecoration = 'none';
-                    websiteLink.style.color = 'black';
+                    websiteLink.style.color = isDarkMode ? "#fff" : "black";
                     websiteLink.style.cursor = 'pointer';
                     
 
@@ -125,6 +212,17 @@ sidebar.appendChild(closeButton);
     summaryElement.appendChild(loaderText);
     sidebar.appendChild(summaryElement);
 
+    // Add this CSS to your stylesheet or within a <style> tag in your HTML
+const style = document.createElement('style');
+style.innerHTML = `
+.anchor-offset {
+        
+    scroll-margin-top: 70px;
+}
+
+`;
+document.head.appendChild(style);
+
     
                     // Process the response and update the sidebar
                     // ...existing code...
@@ -153,7 +251,7 @@ madeBySection.style.marginTop = '20px';
 madeBySection.style.textAlign = 'center';
 madeBySection.style.fontSize = '14px';
 madeBySection.style.color = '#888';
-madeBySection.innerHTML = `Crossquery is made by <a href="https://x.com/paraschopra" target="_blank">@paraschopra</a>
+madeBySection.innerHTML = `CrossQuery is made by <a href="https://x.com/paraschopra" target="_blank">@paraschopra</a>
 <br/>For feedback, join this <a href="https://t.co/TnfFxwRFQi">WA group</a>`;
 
 // Append the "Made by Paras" section to the sidebar
@@ -162,6 +260,8 @@ sidebar.appendChild(madeBySection);
     // Append the sidebar to the document body
 document.body.appendChild(sidebar);
   }
+
+  
 
   function hideSidebarStuff()
   {
@@ -194,8 +294,8 @@ function updateSidebar(results) {
             const listItem = document.createElement('li');
             listItem.style.marginTop = '10px';
             listItem.innerHTML = `
-            <a name="result-${i}"></a>
-            <span style='font-size: 16px;'>[${i++}] <a href="${result.link}" style="color: #1a0dab; font-weight: 600" target="_blank">${result.title}</a></span>
+            <a id="result-${i}" class="anchor-offset" name="result-${i}"></a>
+            <span style='font-size: 16px;'>[${i++}] <a href="${result.link}" style="color: ${isDarkMode ? linkColorDark : linkColorLight}; font-weight: 600" target="_blank">${result.title}</a></span>
           <p style="margin-top:5px">${result.description}</p>
         `;
             resultsList.appendChild(listItem);
@@ -207,7 +307,7 @@ function updateSummary(summary) {
     unblurSummary();
     const summaryElement = document.getElementById('summary-element');
   const summaryReplaced = summary.replace(/<(\d+)>/g, (match, number) => {
-    return `<a href="#result-${number}">[${number}]</a>`;
+    return `<a style="color: ${isDarkMode ? linkColorDark : linkColorLight};" href="#result-${number}">[${number}]</a>`;
   });
     if (summaryElement) {
         summaryElement.innerHTML = `
@@ -294,6 +394,14 @@ async function updateSidebarWithResponse(response, searchQuery){
 }
 
 window.addEventListener('load', async () => {
+
+    const searchEnabled = await isSearchEnabled();
+                    if (!searchEnabled) {
+                        console.log("Search disabled");
+                        return;
+                    }
+                    
+
     const urlParams = new URLSearchParams(window.location.search);
     const tbm = urlParams.get('tbm');
     if (tbm) {
@@ -302,6 +410,9 @@ window.addEventListener('load', async () => {
     }
 
     createSidebar();
+
+    console.log("Detecting color scheme");
+    detectColorScheme();
 
     const searchInput = document.querySelector('input[name="q"]');
     const searchQuery = searchInput.value;
