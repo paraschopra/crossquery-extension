@@ -252,7 +252,8 @@ madeBySection.style.textAlign = 'center';
 madeBySection.style.fontSize = '14px';
 madeBySection.style.color = '#888';
 madeBySection.innerHTML = `CrossQuery is made by <a href="https://x.com/paraschopra" target="_blank">@paraschopra</a>
-<br/>For feedback, join this <a href="https://t.co/TnfFxwRFQi">WA group</a>`;
+<br/>For feedback, join this <a href="https://t.co/TnfFxwRFQi">WA group</a>
+<br/><br/><em>AI generated summaries can contain errors</em>`;
 
 // Append the "Made by Paras" section to the sidebar
 sidebar.appendChild(madeBySection);
@@ -404,7 +405,8 @@ window.addEventListener('load', async () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const tbm = urlParams.get('tbm');
-    if (tbm) {
+    const searchDiv = document.querySelector("div#search");
+    if (!searchDiv) {
         console.log('Disabling sidebar on non-text search results page');
         return;
     }
