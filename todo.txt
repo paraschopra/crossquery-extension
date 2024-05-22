@@ -1,6 +1,0 @@
-zip -r dist.zip *
-
-https://github.com/chiragksharma offered to help
-
-A "Time filter" will be a good addon , I feel. For some searches, I often filter by "past year " or "past month".
-
