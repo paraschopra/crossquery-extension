@@ -5,6 +5,7 @@ Enhanced Google search experience with summaries from reddit and other websites.
 [Chrome extension link](https://chromewebstore.google.com/detail/crossquery/bjafchghcaffbfmdkhkmefppcabcbinl?hl=en-GB&authuser=3)
 
 **Roadmap (please contribute)**
+- [ ] Clean code (it's spaghetti right now)
 - [ ] Firefox, Opera and Edge extensions
 - [ ] Give search tips based on query (e.g. if you're searching for X, it would suggest: "Have you thought about Y")
 - [ ] Adding all advanced Google search tricks as easy options https://ahrefs.com/blog/google-advanced-search-operators/
