@@ -1,14 +1,17 @@
-zip -r dist.zip *
+## CrossQuery extension
 
-I will be developing it continuously, so if you want to share feedback or new ideas, join this WA group:
-https://t.co/TnfFxwRFQi
+Enhanced Google search experience with summaries from reddit and other websites.
 
-Testimonials:
+[Chrome extension link](https://chromewebstore.google.com/detail/crossquery/bjafchghcaffbfmdkhkmefppcabcbinl?hl=en-GB&authuser=3)
 
-https://x.com/121prateek/status/1792855879089328259
+**Roadmap (please contribute)**
+[ ] Firefox, Opera and Edge extensions
+[ ] Give search tips based on query (e.g. if you're searching for X, it would suggest: "Have you thought about Y")
+[ ] Adding all advanced Google search tricks as easy options https://ahrefs.com/blog/google-advanced-search-operators/
+[ ] Automatically figure out which forums to search beyond reddit, based on keywords
+[ ] Give ability to specify model in settings
+[ ] Options to specify time filter (last year, lasy week, etc)
 
-A fantastic tool to cut through the nois. I got crisp answers to my searches summarized from reddit that would have otherwise took hours to piece together.
+CrossQuery is made by [@paraschopra](https://x.com/paraschopra)
 
-https://chromewebstore.google.com/detail/crossquery/bjafchghcaffbfmdkhkmefppcabcbinl
-
-https://x.com/codingmickey/status/1792883960122429705
+For feedback, join this [WA group](https://t.co/TnfFxwRFQi)
