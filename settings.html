@@ -1,33 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CrossQuery Extension Settings</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        input[type="text"] {
-            width: 300px;
-            padding: 5px;
-            margin-bottom: 10px;
-        }
-        button {
-            padding: 5px 10px;
-        }
-    </style>
+  <title>CrossQuery Extension Settings</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    input[type="text"] {
+      width: 300px;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 5px 10px;
+    }
+  </style>
 </head>
 <body>
-    <h1>CrossQuery Extension Settings</h1>
-    <p>Enter the websites you want to search (one per line).</p>
-    <p>Note: the first website you enter becomes the default one to be searched</p>
-    <textarea id="websites" rows="5" cols="50">
+  <h1>CrossQuery Extension Settings</h1>
+  
+  <p><label>
+    <input type="checkbox" id="searchToggle"> Enable Search
+  </label></p>
+  <p><label>
+    <input type="checkbox" id="summaryToggle"> Enable Summary
+  </label></p>
+  
+  <p><strong>Enter the websites you want to search (one per line):</strong></p>
+  <p><em>Note</em>: the first website you enter becomes the default one to be searched</p>
+  <textarea id="websites" rows="5" cols="50">
 reddit.com
 ycombinator.com
-    </textarea>
-    <br>
-    <button id="save">Save</button>
-
-    <script src="settings.js"></script>
+</textarea>
+  <br><br>
+  
+  <label for="apiKey">OpenAI API Key:</label>
+  <input type="text" id="apiKey" name="apiKey">
+  
+  <p><em>Note</em>: <strong>your API key is never uploaded</strong> (it remains on the client)</p>
+  <br>
+  <button id="save">Save</button>
+  
+  
+  <script src="settings.js"></script>
 </body>
 </html>
