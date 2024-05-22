@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CrossQuery",
-  "version": "1.2",
+  "version": "1.3",
   "description": "Enhanced Google search experience with summaries from reddit and other websites",
   "permissions": [
     "scripting",
@@ -9,10 +9,7 @@
   ],
   "host_permissions": [
     "https://www.google.com/",
-    "https://google.com/",
-    "http://localhost/*",
-    "https://searchplusplus-server-production.up.railway.app/",
-    "https://crossquery.invertedpassion.com/"
+    "https://google.com/"
   ],
   "background": {
     "service_worker": "background.js"

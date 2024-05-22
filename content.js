@@ -17,7 +17,7 @@ function applyDarkModeStyles() {
     const sidebar = document.getElementById('custom-sidebar');
     if (!sidebar) return;
 
-    console.log("Dark moade");
+    //console.log("Dark moade");
     isDarkMode = true;
 
     sidebar.style.backgroundColor = '#333';
@@ -39,7 +39,7 @@ function applyLightModeStyles() {
     const sidebar = document.getElementById('custom-sidebar');
     if (!sidebar) return;
 
-    console.log("Light mode");
+    //console.log("Light mode");
 
     isDarkMode = false;
 
@@ -88,13 +88,32 @@ function detectColorScheme() {
 function isSearchEnabled() {
     return new Promise((resolve) => {
         chrome.storage.sync.get('searchEnabled', (data) => {
-            console.log("Search enabled", data.searchEnabled);
+            //console.log("Search enabled", data.searchEnabled);
             resolve(data.searchEnabled !== false); // default to true if not set
         });
     });
 }
 
+function isSummaryEnabled() {
+    return new Promise((resolve) => {
+        chrome.storage.sync.get('summaryEnabled', (data) => {
+            //console.log("Summary enabled", data.summaryEnabled);
+            resolve(data.summaryEnabled !== false); // default to true if not set
+        });
+    });
+}
+
+function returnOpenAIKey() {
+    return new Promise((resolve) => {
+        chrome.storage.sync.get('openaiApiKey', (data) => {
+            //console.log("Key found", data.openaiApiKey);
+            resolve(data.openaiApiKey); // default to true if not set
+        });
+    });
+}
+
 function createSidebar() {
+
     const sidebar = document.createElement('div');
     sidebar.id = 'custom-sidebar';
     sidebar.style.position = 'absolute';
@@ -159,7 +178,7 @@ sidebar.appendChild(closeButton);
 
 
                     
-                    console.log("Clicked on", website, "with query ", searchQuery);
+                    //console.log("Clicked on", website, "with query ", searchQuery);
                     hideSidebarStuff();
                     const response = await chrome.runtime.sendMessage({
                         action: 'performSearch',
@@ -262,6 +281,9 @@ sidebar.appendChild(madeBySection);
 document.body.appendChild(sidebar);
   }
 
+  function alertAddWebsites(){
+    alert("To add more websites to search, go to extension options (by right clicking on the extension icon");
+  }
   
 
   function hideSidebarStuff()
@@ -270,7 +292,6 @@ document.body.appendChild(sidebar);
     const summaryElement = document.getElementById('summary-element');
     resultsList.style.filter = "blur(2px)";
     summaryElement.style.filter = "blur(2px)";
-    console.log("Yay");
   }
 
   function unblurResults()
@@ -340,43 +361,98 @@ function parseSearchResults(html) {
     return results;
 }
 
-async function summarizeResults(results, searchQuery) {
+async function summarizeResults_own_key(results, searchQuery) {
 
-    const apiUrl = isLocal
-  ? 'http://localhost:4000/summarize'
-  //: 'https://searchplusplus-server-production.up.railway.app/summarize';
-  : 'https://crossquery.invertedpassion.com/summarize';
 
-    
-
-    console.log(apiUrl);
-
-    if(results.length < 5) {
-        return "Not enough results to summarize";
+    if(!summaryEnabled){
+        //console.log("Summary disabled");
+        updateSummary('');
+        return;
     }
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ searchQuery, results })
+    if(!openaiApiKey){
+       // console.log("No API key");
+        updateSummary(`<strong>Add your OpenAI API keys to summarize results</strong> (or disable summary) by clicking on the extension icon. <a href="https://www.youtube.com/watch?v=Hzz7V19bVVw" target="_blank">Here's how summaries look like.</a>`);
+        return;
+        
+    }
+
+    const titles = results.map(result => result.title).join('\n');
+    const snippets = results.map(result => result.description).join('\n');
+
+    let snippet = '';
+    let i =1;
+
+    results.forEach(result => {
+        snippet += `<${i++}> ${result.title}: ${result.description}\n`;
     });
-  
+
+
+    const prompt = `You will be given search results from discussion forums like reddit in the format:
+    <result-index> result-title: result-description
+    
+    You need to summarize the search results and cite relevant results inline like this <result-index>. Your summary needs to be simple, useful and direct. Assume summary is all that a user has access to. So don't do an academic job of summarizing, rather try to help.
+    
+    IMPORTANT: get straight to the point. Don't say "search results say.."
+    
+    Search query: ${searchQuery}
+    ${snippet}
+    `;
+
+    //const prompt = `Please summarize the following search results:\n\n${snippet}`;
+
+    //const myopenaiApiKey = await returnOpenAIKey();
+    //console.log("My Key: ", myopenaiApiKey);
+
+    //console.log("Using local summary ", openaiApiKey);
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0,
+            stream: true
+        })
+    });
+
+    //console.log(response);
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let summary = '';
-  
+
     while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      summary += chunk;
-      updateSummary(summary);
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') {
+                    return summary;
+                }
+                try {
+                    const { choices } = JSON.parse(data);
+                    const { delta } = choices[0];
+                    if (delta.content) {
+                        summary += delta.content;
+                        updateSummary(summary);
+                    }
+                } catch (error) {
+                    console.error('Error parsing API response:', error);
+                }
+            }
+        }
     }
-  
-    return summary;
-  }
+}
 
 async function updateSidebarWithResponse(response, searchQuery){
     if (response && response.html) {
@@ -387,12 +463,16 @@ async function updateSidebarWithResponse(response, searchQuery){
         updateSidebar(results);
 
         //console.log('Summarizing search results');
-        const summary = await summarizeResults(results, searchQuery);
+        const summary = await summarizeResults_own_key(results, searchQuery);
         //console.log('Summary:', summary);
     } else {
         console.log('No results found.');
     }
 }
+
+let openaiApiKey = '';
+let summaryEnabled = true;
+
 
 window.addEventListener('load', async () => {
 
@@ -401,7 +481,13 @@ window.addEventListener('load', async () => {
                         console.log("Search disabled");
                         return;
                     }
-                    
+    //console.log("Search enabled: ", searchEnabled);
+
+    openaiApiKey = await returnOpenAIKey();
+    //console.log("Key: ", openaiApiKey);
+
+    summaryEnabled = await isSummaryEnabled();
+    //console.log("Summary enabled: ", summaryEnabled);
 
     const urlParams = new URLSearchParams(window.location.search);
     const tbm = urlParams.get('tbm');
@@ -411,9 +497,9 @@ window.addEventListener('load', async () => {
         return;
     }
 
-    createSidebar();
+    createSidebar(openaiApiKey);
 
-    console.log("Detecting color scheme");
+    //console.log("Detecting color scheme");
     detectColorScheme();
 
     const searchInput = document.querySelector('input[name="q"]');
