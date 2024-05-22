@@ -16,3 +16,7 @@ Enhanced Google search experience with summaries from reddit and other websites.
 CrossQuery is made by [@paraschopra](https://x.com/paraschopra)
 
 For feedback, join this [WA group](https://t.co/TnfFxwRFQi)
+
+---
+
+This project is licensed under the terms of the MIT license.
