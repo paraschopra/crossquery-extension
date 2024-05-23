@@ -12,6 +12,7 @@ Enhanced Google search experience with summaries from reddit and other websites.
 - [ ] Automatically figure out which forums to search beyond reddit, based on keywords
 - [ ] Give ability to specify model in settings
 - [ ] Options to specify time filter (last year, lasy week, etc)
+- [ ] Ability to go beyond 10 search results
 
 CrossQuery is made by [@paraschopra](https://x.com/paraschopra)
 
