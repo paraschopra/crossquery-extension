@@ -421,6 +421,12 @@ async function summarizeResults_own_key(results, searchQuery) {
     });
 
     //console.log(response);
+    if (!response.ok) {
+        updateSummary(
+          'Either your credits are exhausted or you have entered the wrong OpenAI token'
+        );
+        return;
+      }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
