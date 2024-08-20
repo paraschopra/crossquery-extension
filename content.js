@@ -271,7 +271,7 @@ madeBySection.style.textAlign = 'center';
 madeBySection.style.fontSize = '14px';
 madeBySection.style.color = '#888';
 madeBySection.innerHTML = `CrossQuery is made by <a href="https://x.com/paraschopra" target="_blank">@paraschopra</a>
-<br/>For feedback, join this <a href="https://t.co/TnfFxwRFQi">WA group</a>
+<br/>For feedback, <a href="https://github.com/paraschopra/crossquery-extension/issues">raise an issue</a> or tweet to me
 <br/><br/><em>AI generated summaries can contain errors</em>`;
 
 // Append the "Made by Paras" section to the sidebar
@@ -465,6 +465,14 @@ async function updateSidebarWithResponse(response, searchQuery){
         const html = response.html;
         //console.log('Parsing search results');
         const results = parseSearchResults(html);
+
+        if (results.length === 0) {
+            // No results found
+            updateSidebar([]);
+            updateSummary('No results found.');
+            return;
+        }
+
         //console.log('Search results:', results);
         updateSidebar(results);
 
