@@ -22,7 +22,15 @@
     <input type="checkbox" id="summaryToggle"> Enable Summary
   </label></p>
   <p>To <strong>edit websites</strong> to search, <a href="#" id="openSettings">open extension settings</a></p>
-  <p><label for="apiKey">OpenAI API Key:</label>
+  <p><label>Select API Provider:</label><br>
+  <label>
+    <input type="radio" name="apiProvider" value="openai" id="openaiRadio"> OpenAI API
+  </label><br>
+  <label>
+    <input type="radio" name="apiProvider" value="gemini" id="geminiRadio"> Gemini API
+  </label>
+  <br><br>
+  <label for="apiKey">API Key:</label>
   <input type="text" id="apiKey" name="apiKey">
   <button id="saveApiKey">Save</button></p>
   <p><em>Note</em>: <strong>your API key is never uploaded</strong> (it remains on the client)</p>
