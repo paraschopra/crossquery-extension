@@ -395,18 +395,50 @@ function parseSearchResults(html) {
     return results;
 }
 
-async function summarizeResults_own_key(results, searchQuery) {
+async function updateSidebarWithResponse(response, searchQuery){
+    if (response && response.html) {
+        const html = response.html;
+        //console.log('Parsing search results');
+        const results = parseSearchResults(html);
+
+        if (results.length === 0) {
+            // No results found
+            updateSidebar([]);
+            updateSummary('No results found.');
+            return;
+        }
+
+        //console.log('Search results:', results);
+        updateSidebar(results);
+
+        //console.log('Summarizing search results');
+        const summary = await summarizeResults(results, searchQuery);
+        //console.log('Summary:', summary);
+    } else {
+        console.log('No results found.');
+    }
+}
+
+async function getApiProvider() {
+    return new Promise((resolve) => {
+        chrome.storage.sync.get('apiProvider', (data) => {
+            resolve(data.apiProvider || 'gemini');
+        });
+    });
+}
+
+async function summarizeResults(results, searchQuery) {
     if (!summaryEnabled) {
         updateSummary('');
         return;
     }
 
-    if(!openaiApiKey){
-       // console.log("No API key");
-        updateSummary(`<strong>Add your OpenAI API keys to summarize results</strong> (or disable summary) by clicking on the extension icon. <a href="https://www.youtube.com/watch?v=Hzz7V19bVVw" target="_blank">Here's how summaries look like.</a>`);
+    const apiKey = openaiApiKey;
+
+    if (!apiKey) {
+        updateSummary('<strong>Add your API key to summarize results</strong> by clicking on the extension icon.');
         return;
     }
-
     const titles = results.map(result => result.title).join('\n');
     const snippets = results.map(result => result.description).join('\n');
 
@@ -427,41 +459,71 @@ async function summarizeResults_own_key(results, searchQuery) {
     Search query: ${searchQuery}
     ${snippet}`;
 
+    const apiProvider = await getApiProvider();
     try {
-        const genAI = new GoogleGenerativeAI(openaiApiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        
-        const result = await model.generateContent(prompt);
-        const summary = result.response.text();
-        updateSummary(summary);
-        return summary;
-    } catch (error) {
-        console.error('Error calling Gemini API:', error);
-        updateSummary('Error generating summary. Please check your API key and try again.');
-    }
-}
+        let summary = '';
+        if (apiProvider === 'openai') {
+            // OpenAI API
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0,
+                    stream: true,
+                }),
+            });
 
-async function updateSidebarWithResponse(response, searchQuery){
-    if (response && response.html) {
-        const html = response.html;
-        //console.log('Parsing search results');
-        const results = parseSearchResults(html);
+            if (!response.ok) {
+                updateSummary('Either your OpenAI credits are exhausted or you have entered the wrong OpenAI token');
+                return;
+            }
 
-        if (results.length === 0) {
-            // No results found
-            updateSidebar([]);
-            updateSummary('No results found.');
-            return;
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') {
+                            unblurSummary();
+                            return;
+                        }
+                        try {
+                            const { choices } = JSON.parse(data);
+                            const { delta } = choices[0];
+                            if (delta.content) {
+                                summary += delta.content;
+                                updateSummary(summary);
+                            }
+                        } catch (error) {
+                            console.error('Error parsing API response:', error);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Gemini API
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            const result = await model.generateContent(prompt);
+            summary = await result.response.text();
         }
-
-        //console.log('Search results:', results);
-        updateSidebar(results);
-
-        //console.log('Summarizing search results');
-        const summary = await summarizeResults_own_key(results, searchQuery);
-        //console.log('Summary:', summary);
-    } else {
-        console.log('No results found.');
+        updateSummary(summary);
+    } catch (error) {
+        console.error('Error generating summary:', error);
+        updateSummary('Error generating summary. Please check your API key and try again.');
     }
 }
 
