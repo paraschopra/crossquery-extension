@@ -17,46 +17,51 @@ function applyDarkModeStyles() {
     const sidebar = document.getElementById('custom-sidebar');
     if (!sidebar) return;
 
-    //console.log("Dark moade");
     isDarkMode = true;
 
-    sidebar.style.backgroundColor = '#333';
-    sidebar.style.color = '#fff';
-    sidebar.style.border = '1px solid #444';
+    
+    sidebar.style.backgroundColor = '#2c3e50'; 
+    sidebar.style.color = '#ecf0f1'; 
+    sidebar.style.border = '1px solid #34495e'; 
 
+    
     const links = sidebar.querySelectorAll('a');
     links.forEach(link => {
-        link.style.color = '#99c3ff';
+        link.style.color = '#3498db'; 
     });
 
+  
     const madeBySection = sidebar.querySelector('div');
     if (madeBySection) {
-        madeBySection.style.color = '#bbb';
+        madeBySection.style.color = '#bdc3c7'; 
     }
 }
+
 
 function applyLightModeStyles() {
     const sidebar = document.getElementById('custom-sidebar');
     if (!sidebar) return;
 
-    //console.log("Light mode");
-
     isDarkMode = false;
 
-    sidebar.style.backgroundColor = '#fafafa';
-    sidebar.style.color = '#4d5156';
-    sidebar.style.border = '1px solid #ccc';
+    
+    sidebar.style.backgroundColor = '#e5f6f0';
+    sidebar.style.color = '#2c3e50';
+    sidebar.style.border = '1px solid #ddd';
 
+   
     const links = sidebar.querySelectorAll('a');
     links.forEach(link => {
-        link.style.color = 'blue';
+        link.style.color = '#007bff'; 
     });
 
+   
     const madeBySection = sidebar.querySelector('div');
     if (madeBySection) {
-        madeBySection.style.color = '#888';
+        madeBySection.style.color = '#888'; // Soft gray text for footer in light mode
     }
 }
+
 
 function applyColorScheme()
 {
@@ -103,82 +108,83 @@ function isSummaryEnabled() {
     });
 }
 
-function returnOpenAIKey() {
-    return new Promise((resolve) => {
-        chrome.storage.sync.get('openaiApiKey', (data) => {
-            //console.log("Key found", data.openaiApiKey);
-            resolve(data.openaiApiKey); // default to true if not set
-        });
-    });
-}
 
 function createSidebar() {
-
     const sidebar = document.createElement('div');
     sidebar.id = 'custom-sidebar';
     sidebar.style.position = 'absolute';
     sidebar.style.top = '150px';
     sidebar.style.right = '50px';
-    sidebar.style.width = '400px';
-    sidebar.style.padding = '10px';
-    sidebar.style.backgroundColor = '#fafafa';
-    sidebar.style.border = '1px solid #ccc';
+    sidebar.style.width = '350px'; 
+    sidebar.style.padding = '20px'; 
+    sidebar.style.backgroundColor = '#ffffff'; 
+    sidebar.style.borderRadius = '12px'; 
+    sidebar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
     sidebar.style.zIndex = '127';
-    sidebar.style.color = '#4d5156';
-    sidebar.style.lineHeight = '1.3';
+    sidebar.style.color = '#333'; 
+    sidebar.style.fontFamily = 'Arial, sans-serif'; 
+    sidebar.style.lineHeight = '1.6'; 
     sidebar.style.overflowY = 'auto';
-    sidebar.style.height = 'fit-content';
+    sidebar.style.maxHeight = '80vh'; 
     sidebar.style.opacity = '0.95';
+    sidebar.style.transition = 'opacity 0.3s ease'; 
 
-    // Create the close button
-const closeButton = document.createElement('button');
-closeButton.innerText = '✖';
-//closeButton.style.position = 'absolute';
-//closeButton.style.top = '5px';
-//closeButton.style.right = '5px';
-closeButton.style.float = 'right';
-closeButton.style.background = 'none';
-closeButton.style.border = 'none';
-closeButton.style.fontSize = '16px';
-closeButton.style.cursor = 'pointer';
+    
+    const closeButton = document.createElement('button');
+    closeButton.innerText = '✖';
+    closeButton.style.position = 'absolute';
+    closeButton.style.top = '10px';
+    closeButton.style.right = '10px';
+    closeButton.style.background = 'none';
+    closeButton.style.border = 'none';
+    closeButton.style.fontSize = '20px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.color = '#888';
+    closeButton.addEventListener('mouseenter', () => {
+        closeButton.style.color = '#e74c3c'; 
+    });
+    closeButton.addEventListener('mouseleave', () => {
+        closeButton.style.color = '#888'; 
+    });
+    closeButton.addEventListener('click', () => {
+        sidebar.style.display = 'none';
+    });
 
-// Add event listener to close the sidebar
-closeButton.addEventListener('click', () => {
-    sidebar.style.display = 'none';
-});
+    sidebar.appendChild(closeButton);
 
-// Append the close button to the sidebar
-sidebar.appendChild(closeButton);
-
+  
     const websiteContainer = document.createElement('div');
     websiteContainer.id = 'website-container';
-    websiteContainer.style.marginTop = '3px';
-    
-   
+    websiteContainer.style.marginTop = '20px';
+    websiteContainer.style.fontSize = '16px'; 
+    websiteContainer.style.color = '#555'; 
     sidebar.appendChild(websiteContainer);
 
-    // Create the "TLDR from" heading
-    //const tldrHeading = document.createElement('h3');
-    //tldrHeading.textContent = 'Search++ TLDR of';
-    //websiteContainer.appendChild(tldrHeading);
-
-    // Populate website options from user preferences
+    
     chrome.storage.sync.get('preferredWebsites', (data) => {
         const websites = data.preferredWebsites || ['reddit.com', 'ycombinator.com'];
         websites.forEach((website, index) => {
             const websiteLink = document.createElement('a');
             websiteLink.href = '#';
             websiteLink.textContent = website;
+            websiteLink.style.display = 'inline-block';
+            websiteLink.style.marginRight = '15px'; 
+            websiteLink.style.color = '#4a90e2'; 
+            websiteLink.style.fontWeight = 'normal';
+            websiteLink.style.textDecoration = 'underline';
+            websiteLink.style.transition = 'color 0.3s ease'; 
+            websiteLink.addEventListener('mouseenter', () => {
+                websiteLink.style.color = '#357ab8'; 
+            });
+            websiteLink.addEventListener('mouseleave', () => {
+                websiteLink.style.color = '#4a90e2'; 
+            });
             websiteLink.addEventListener('click', async (event) => {
                 event.preventDefault();
                 const searchInput = document.querySelector('input[name="q"]');
                 const searchQuery = searchInput.value;
 
                 try {
-
-
-                    
-                    //console.log("Clicked on", website, "with query ", searchQuery);
                     hideSidebarStuff();
                     const response = await chrome.runtime.sendMessage({
                         action: 'performSearch',
@@ -188,20 +194,17 @@ sidebar.appendChild(closeButton);
                     unblurResults();
                     updateSidebarWithResponse(response);
 
-                    // Remove highlighting from all website links
+                
                     const allWebsiteLinks = websiteContainer.querySelectorAll('a');
                     allWebsiteLinks.forEach(link => {
                         link.style.fontWeight = 'normal';
                         link.style.textDecoration = 'underline';
-                        link.style.color = isDarkMode ? linkColorDark : linkColorLight;
+                        link.style.color = '#4a90e2';
                     });
 
                     websiteLink.style.fontWeight = 'bold';
                     websiteLink.style.textDecoration = 'none';
-                    websiteLink.style.color = isDarkMode ? "#fff" : "black";
-                    websiteLink.style.cursor = 'pointer';
-                    
-
+                    websiteLink.style.color = '#e74c3c';
                 } catch (error) {
                     console.error('Error sending message to background.js:', error);
                 }
@@ -213,73 +216,61 @@ sidebar.appendChild(closeButton);
                 const separator = document.createTextNode(' | ');
                 websiteContainer.appendChild(separator);
             }
+
             if (index === 0) {
-                // Automatically click the first website link
+               
                 websiteLink.click();
             }
         });
     });
 
-  
+    // Create the summary element section
     const summaryElement = document.createElement('div');
     summaryElement.id = 'summary-element';
     summaryElement.style.boxSizing = 'border-box';
     summaryElement.style.fontSize = '17px';
     summaryElement.style.lineHeight = '1.58';
+    summaryElement.style.padding = '15px';
+    summaryElement.style.borderRadius = '8px';
+    summaryElement.style.backgroundColor = '#f4f6f9'; 
+    summaryElement.style.color = '#333'; 
     const loaderText = document.createElement('p');
-    loaderText.innerHTML = 'Loading..';
+    loaderText.innerHTML = 'Loading...';
+    loaderText.style.fontSize = '16px';
+    loaderText.style.color = '#4a90e2'; 
     summaryElement.appendChild(loaderText);
     sidebar.appendChild(summaryElement);
 
-    // Add this CSS to your stylesheet or within a <style> tag in your HTML
-const style = document.createElement('style');
-style.innerHTML = `
-.anchor-offset {
-        
-    scroll-margin-top: 70px;
-}
-
-`;
-document.head.appendChild(style);
-
     
-                    // Process the response and update the sidebar
-                    // ...existing code...
-
-  
     const resultsList = document.createElement('ul');
     resultsList.id = 'results-list';
     resultsList.style.listStyleType = 'none';
+    resultsList.style.marginTop = '20px'; 
+    resultsList.style.paddingLeft = '0';
+    resultsList.style.maxHeight = '400px'; 
+    resultsList.style.overflowY = 'auto'; 
+    resultsList.style.borderTop = '1px solid #ddd'; 
+    resultsList.style.paddingTop = '15px'; 
     sidebar.appendChild(resultsList);
 
-    /*
-    const insertIntoDiv = document.querySelector("div#rcnt");
-    if(insertIntoDiv){
-        sidebar.style.position = 'inherit';
-        sidebar.style.zIndex = '0';
-        sidebar.style.marginLeft = '25px';
-        sidebar.style.marginTop = '25px';
-        insertIntoDiv.appendChild(sidebar);
-    } else {
-        document.body.appendChild(sidebar);
-    } */
+  
+    const madeBySection = document.createElement('div');
+    madeBySection.style.marginTop = '20px';
+    madeBySection.style.textAlign = 'center';
+    madeBySection.style.fontSize = '14px';
+    madeBySection.style.color = '#888';
+    madeBySection.innerHTML = `
+        CrossQuery is made by <a href="https://x.com/paraschopra" target="_blank" style="color: #4a90e2;">@paraschopra</a>
+        <br/>For feedback, <a href="https://github.com/paraschopra/crossquery-extension/issues" style="color: #4a90e2;">raise an issue</a> or tweet to me
+        <br/><br/><em style="font-size: 12px; color: #777;">AI generated summaries can contain errors</em>
+    `;
 
-    // Create the "Made by Paras" section
-const madeBySection = document.createElement('div');
-madeBySection.style.marginTop = '20px';
-madeBySection.style.textAlign = 'center';
-madeBySection.style.fontSize = '14px';
-madeBySection.style.color = '#888';
-madeBySection.innerHTML = `CrossQuery is made by <a href="https://x.com/paraschopra" target="_blank">@paraschopra</a>
-<br/>For feedback, <a href="https://github.com/paraschopra/crossquery-extension/issues">raise an issue</a> or tweet to me
-<br/><br/><em>AI generated summaries can contain errors</em>`;
+    sidebar.appendChild(madeBySection);
 
-// Append the "Made by Paras" section to the sidebar
-sidebar.appendChild(madeBySection);
+   
+    document.body.appendChild(sidebar);
+}
 
-    // Append the sidebar to the document body
-document.body.appendChild(sidebar);
-  }
 
   function alertAddWebsites(){
     alert("To add more websites to search, go to extension options (by right clicking on the extension icon");
@@ -307,34 +298,62 @@ document.body.appendChild(sidebar);
     summaryElement.style.filter = "blur(0px)";
   }
 
-function updateSidebar(results) {
+  function updateSidebar(results) {
     const resultsList = document.getElementById('results-list');
     if (resultsList) {
-        resultsList.innerHTML = '';
-        let i=1;
+        resultsList.innerHTML = ''; 
+        let i = 1;
         results.forEach(result => {
             const listItem = document.createElement('li');
-            listItem.style.marginTop = '10px';
+            listItem.style.marginTop = '15px'; 
+            listItem.style.padding = '10px'; 
+            listItem.style.backgroundColor = '#f9f9f9'; 
+            listItem.style.borderRadius = '8px'; 
+            listItem.style.transition = 'background-color 0.3s ease'; 
+            listItem.addEventListener('mouseenter', () => {
+                listItem.style.backgroundColor = '#f1f1f1'; 
+            });
+            listItem.addEventListener('mouseleave', () => {
+                listItem.style.backgroundColor = '#f9f9f9'; 
+            });
+
             listItem.innerHTML = `
-            <a id="result-${i}" class="anchor-offset" name="result-${i}"></a>
-            <span style='font-size: 16px;'>[${i++}] <a href="${result.link}" style="color: ${isDarkMode ? linkColorDark : linkColorLight}; font-weight: 600" target="_blank">${result.title}</a></span>
-          <p style="margin-top:5px">${result.description}</p>
-        `;
+                <a id="result-${i}" class="anchor-offset" name="result-${i}"></a>
+                <span style="font-size: 16px; font-weight: 600; color: #4a90e2;">[${i}]</span>
+                <a href="${result.link}" style="color: #4a90e2; font-weight: 600;" target="_blank">${result.title}</a>
+                <p style="margin-top: 10px; font-size: 14px; color: #555;">${result.description}</p>
+            `;
             resultsList.appendChild(listItem);
+            i++;
         });
     }
 }
 
+
 function updateSummary(summary) {
     unblurSummary();
     const summaryElement = document.getElementById('summary-element');
-  const summaryReplaced = summary.replace(/<(\d+)>/g, (match, number) => {
-    return `<a style="color: ${isDarkMode ? linkColorDark : linkColorLight};" href="#result-${number}">[${number}]</a>`;
-  });
+
+   
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const linkColorDark = '#1e90ff'; 
+    const linkColorLight = '#0000ff';
+
+    
+    const summaryReplaced = summary.replace(/<([\d,\s]+)>/g, (match, numbers) => {
+        const linkColor = isDarkMode ? linkColorDark : linkColorLight;
+
+    
+        const linkedNumbers = numbers.split(',')
+            .map(number => `<a style="color: ${linkColor};" href="#result-${number.trim()}">[${number.trim()}]</a>`)
+            .join(', ');
+
+        return linkedNumbers;
+    });
+
+    
     if (summaryElement) {
-        summaryElement.innerHTML = `
-        <p>${summaryReplaced}</p>
-      `;
+        summaryElement.innerHTML = `<p>${summaryReplaced}</p>`;
     }
 }
 
@@ -363,22 +382,41 @@ function parseSearchResults(html) {
 
 async function summarizeResults_own_key(results, searchQuery) {
 
+    const settings = await chrome.storage.sync.get(['aiSelection', 'openaiApiKey', 'groqApiKey', 'groqModel', 'summaryEnabled' ,'geminiModel', 'geminiApiKey']);
 
+    const summaryEnabled =  await isSummaryEnabled();
+    const aiSelection = settings.aiSelection || 'openai';
+    const openaiApiKey = settings.openaiApiKey;
+    const groqApiKey = settings.groqApiKey;
+    const geminiApiKey = settings.geminiApiKey;
+    const groqModel = settings.groqModel || 'llama3-8b-8192';
+    const geminiModel = settings.geminiModel || 'gemini-1.5-flash';
+    console.log("Summary enabled: ", summaryEnabled);
+    console.log("AI selection: ", aiSelection);
+    console.log("OpenAI API key: ", openaiApiKey);
+    console.log("Groq API key: ", groqApiKey);
+    console.log("Gemini API key: ", geminiApiKey);
+    console.log("Groq model: ", groqModel);
+    console.log("Gemini model : ", geminiModel);
     if(!summaryEnabled){
-        //console.log("Summary disabled");
-        updateSummary('');
-        return;
-    }
-
-    if(!openaiApiKey){
-       // console.log("No API key");
-        updateSummary(`<strong>Add your OpenAI API keys to summarize results</strong> (or disable summary) by clicking on the extension icon. <a href="https://www.youtube.com/watch?v=Hzz7V19bVVw" target="_blank">Here's how summaries look like.</a>`);
-        return;
         
+        console.log("Summary disabled");
+        updateSummary('Summary is disabled. Please enable it by clicking on the extension icon if you want to see the summary.');
+        return;
     }
 
-    const titles = results.map(result => result.title).join('\n');
-    const snippets = results.map(result => result.description).join('\n');
+    if(aiSelection === 'openai' && !openaiApiKey){
+        updateSummary(`<strong>Add your OpenAI API key to summarize results</strong> (or disable summary) by clicking on the extension icon.`);
+        return;
+    } else if(aiSelection === 'groq' && !groqApiKey){
+        updateSummary(`<strong>Add your GROQ API key to summarize results</strong> (or disable summary) by clicking on the extension icon.`);
+        return;
+    }
+    else if (aiSelection === 'gemini' && !geminiModel){
+        updateSummary(`<strong>Add your Gemini API key to summarize results</strong> (or disable summary) by clicking on the extension icon.`);
+        return;
+    }
+
 
     let snippet = '';
     let i =1;
@@ -398,19 +436,91 @@ async function summarizeResults_own_key(results, searchQuery) {
     Search query: ${searchQuery}
     ${snippet}
     `;
+    console.log("prompt value is ",prompt);
 
-    //const prompt = `Please summarize the following search results:\n\n${snippet}`;
 
-    //const myopenaiApiKey = await returnOpenAIKey();
-    //console.log("My Key: ", myopenaiApiKey);
+    try {
+        
+        if(aiSelection === 'openai') {
+            await getOpenAISummary(prompt, openaiApiKey, updateSummary);
 
-    //console.log("Using local summary ", openaiApiKey);
+        } else if (aiSelection === 'groq') {
+            const summaryText = await getGroqSummary(prompt, groqApiKey, groqModel);
+            console.log("summary text insider the sumarizeResult method is ",summaryText);
+            updateSummary(summaryText);
+        }
+        else{
+            const summaryText = await getGeminiSummary(prompt, geminiApiKey, geminiModel);
+            console.log("summary text insider the sumarizeResult method is ",summaryText);
+            updateSummary(summaryText);
+        }
+        
+    } catch (error) {
+        console.error('Error getting summary:', error);
+        updateSummary('Error generating summary. Please check your API key and try again.');
+    }
+   
+}
+
+async function getGeminiSummary(prompt, apiKey, model) {
+   
+
+    try {
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: prompt,
+                        }],
+                    }],
+                }),
+            }
+        );
+
+        console.log("Response from the API:", response);
+
+        // Check if the response status is not OK
+        if (!response.ok) {
+            if (response.status === 429) {
+                // Handle rate limit error
+                const errorData = await response.json();
+                console.error("Rate limit reached:", errorData.error.message);
+                return "API request limit reached. Please try again later.";
+            }
+
+            // For other errors, throw an exception
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        // Parse the response JSON
+        const data = await response.json();
+        console.log("Data value is:", data);
+
+        // Extract and return the summary text
+        const summary = data.candidates[0].content.parts[0].text;
+        console.log("Summary of Google API is:", summary);
+        return summary;
+
+    } catch (error) {
+        console.error("Error in getGeminiSummary:", error.message);
+        // Return a fallback message for any unexpected errors
+        return "An error occurred while generating the summary. Please try again later.";
+    }
+}
+
+async function getOpenAISummary(prompt, apiKey) {
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${openaiApiKey}`
+            'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
             model: 'gpt-4o-mini',
@@ -420,13 +530,9 @@ async function summarizeResults_own_key(results, searchQuery) {
         })
     });
 
-    //console.log(response);
     if (!response.ok) {
-        updateSummary(
-          'Either your OpenAI credits are exhausted or you have entered the wrong OpenAI token'
-        );
-        return;
-      }
+        throw new Error('OpenAI API error');
+    }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
@@ -458,7 +564,40 @@ async function summarizeResults_own_key(results, searchQuery) {
             }
         }
     }
+    return summary;
 }
+
+async function getGroqSummary(prompt, apiKey, model) {
+    
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+            model: model,
+            messages: [{
+                role: "user",
+                content: prompt,
+            }],
+            temperature: 0.7,
+            max_tokens: 1000,
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('GROQ API error');
+    }
+
+    const data = await response.json();
+    if (data.choices && data.choices[0]?.message) {
+        return data.choices[0].message.content;
+    }
+    
+    throw new Error('No summary available from GROQ');
+}
+
 
 async function updateSidebarWithResponse(response, searchQuery){
     if (response && response.html) {
@@ -477,7 +616,7 @@ async function updateSidebarWithResponse(response, searchQuery){
         updateSidebar(results);
 
         //console.log('Summarizing search results');
-        const summary = await summarizeResults_own_key(results, searchQuery);
+        summarizeResults_own_key(results, searchQuery);
         //console.log('Summary:', summary);
     } else {
         console.log('No results found.');
@@ -495,10 +634,6 @@ window.addEventListener('load', async () => {
                         console.log("Search disabled");
                         return;
                     }
-    //console.log("Search enabled: ", searchEnabled);
-
-    openaiApiKey = await returnOpenAIKey();
-    //console.log("Key: ", openaiApiKey);
 
     summaryEnabled = await isSummaryEnabled();
     //console.log("Summary enabled: ", summaryEnabled);
@@ -511,7 +646,7 @@ window.addEventListener('load', async () => {
         return;
     }
 
-    createSidebar(openaiApiKey);
+    createSidebar();
 
     //console.log("Detecting color scheme");
     detectColorScheme();
@@ -519,21 +654,5 @@ window.addEventListener('load', async () => {
     const searchInput = document.querySelector('input[name="q"]');
     const searchQuery = searchInput.value;
 
-    //console.log('Sending search request to background.js');
 
-    /*
-    try {
-        const response = await chrome.runtime.sendMessage({
-            action: 'performSearch',
-            query: searchQuery,
-            website: 'reddit.com'
-        });
-
-        updateSidebarWithResponse(response);
-        //console.log('Received response from background.js:', response);
-  
-        
-    } catch (error) {
-        console.error('Error sending message to background.js:', error);
-    }   */
 });
