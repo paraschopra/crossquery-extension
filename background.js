@@ -14,7 +14,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const html = await response.text();
   
           console.log('Sending HTML response to content script');
-          console.log(html);
+          // console.log(html);
           sendResponse({ html });
         } catch (error) {
           console.error('Error:', error);

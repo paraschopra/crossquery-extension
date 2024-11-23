@@ -1,32 +1,147 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CrossQuery Extension</title>
   <style>
     body {
-      width: 300px;
-      padding: 10px;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+      width: 320px;
+      background-color: #f9f9f9;
+      color: #333;
     }
-    input[type="checkbox"] {
-      margin-right: 5px;
-      font-size: 50px;
+
+    h1 {
+      font-size: 20px;
+      text-align: center;
+      color: #0056b3;
+    }
+
+    h2 {
+      font-size: 16px;
+      margin-top: 20px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
+      margin-right: 8px;
+    }
+
+    input[type="text"], 
+    select {
+      width: 100%;
+      padding: 5px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background-color: #0056b3;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #004599;
+    }
+
+    #aiOptions div {
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    #aiOptions div label {
+      font-weight: bold;
+    }
+
+    .sub-options {
+      margin-top: 5px;
+      padding-left: 15px;
     }
   </style>
 </head>
 <body>
   <h1>CrossQuery</h1>
-  <p><label>
+
+  <label>
     <input type="checkbox" id="searchToggle"> Enable Search
-  </label></p>
-  <p><label>
+  </label>
+  <label>
     <input type="checkbox" id="summaryToggle"> Enable Summary
-  </label></p>
+  </label>
   <p>To <strong>edit websites</strong> to search, <a href="#" id="openSettings">open extension settings</a></p>
-  <p><label for="apiKey">OpenAI API Key:</label>
-  <input type="text" id="apiKey" name="apiKey">
-  <button id="saveApiKey">Save</button></p>
   <p><em>Note</em>: <strong>your API key is never uploaded</strong> (it remains on the client)</p>
-  
+  <h2>API Configuration</h2>
+  <div id="aiOptions">
+    <div>
+      <label>
+        <input type="radio" name="aiSelection" value="openai"> OpenAI
+      </label>
+      <div class="sub-options">
+        <label>OpenAI API Key: <input type="text" id="openaiApiKey"></label>
+      </div>
+    </div>
+
+    <div>
+      <label>
+        <input type="radio" name="aiSelection" value="groq"> GROQ
+      </label>
+      <div class="sub-options">
+        <label>GROQ API Key: <input type="text" id="groqApiKey"></label>
+        <label>
+          Model:
+          <select id="groqModel">
+            <option value="llama3-8b-8192">llama3-8b-8192</option>
+            <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+            <option value="gemma2-9b-it">gemma2-9b-it</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <label>
+        <input type="radio" name="aiSelection" value="gemini"> Gemini
+      </label>
+      <div class="sub-options">
+        <label>Gemini API Key: <input type="text" id="geminiApiKey"></label>
+        <label>
+          Model:
+          <select id="geminiModel">
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <button id="saveSettings">Save</button>
+ 
+
   <script src="popup.js"></script>
 </body>
 </html>

@@ -1,48 +1,172 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CrossQuery Extension Settings</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
+      background-color: #f4f4f9;
+      color: #333;
     }
-    input[type="text"] {
-      width: 300px;
-      padding: 5px;
+
+    h1 {
+      color: #4a90e2;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .section h2 {
+      color: #4a90e2;
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
       margin-bottom: 10px;
+      font-weight: bold;
     }
+
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    textarea {
+      resize: none;
+    }
+
+    .toggle-container {
+      margin-bottom: 20px;
+    }
+
+    .toggle-container label {
+      display: flex;
+      align-items: center;
+      font-weight: normal;
+    }
+
+    .toggle-container input[type="checkbox"] {
+      margin-right: 10px;
+    }
+
+    .radio-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .radio-container label {
+      display: flex;
+      align-items: center;
+    }
+
+    .radio-container input[type="radio"] {
+      margin-right: 10px;
+    }
+
+    .button-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+
     button {
-      padding: 5px 10px;
+      background-color: #4a90e2;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #357ab8;
+    }
+
+    .note {
+      font-size: 14px;
+      color: #777;
     }
   </style>
 </head>
 <body>
+
   <h1>CrossQuery Extension Settings</h1>
-  
-  <p><label>
-    <input type="checkbox" id="searchToggle"> Enable Search
-  </label></p>
-  <p><label>
-    <input type="checkbox" id="summaryToggle"> Enable Summary
-  </label></p>
-  
-  <p><strong>Enter the websites you want to search (one per line):</strong></p>
-  <p><em>Note</em>: the first website you enter becomes the default one to be searched</p>
-  <textarea id="websites" rows="5" cols="50">
-reddit.com
-ycombinator.com
-</textarea>
-  <br><br>
-  
-  <label for="apiKey">OpenAI API Key:</label>
-  <input type="text" id="apiKey" name="apiKey">
-  
-  <p><em>Note</em>: <strong>your API key is never uploaded</strong> (it remains on the client)</p>
-  <br>
-  <button id="save">Save</button>
-  
-  
+
+  <!-- General Settings -->
+  <div class="section">
+    <h2>General Settings</h2>
+    <div class="toggle-container">
+      <label><input type="checkbox" id="searchToggle"> Enable Search</label>
+      <label><input type="checkbox" id="summaryToggle"> Enable Summary</label>
+    </div>
+
+    <label for="websites">Websites to Search:</label>
+    <textarea id="websites" rows="5" placeholder="Enter websites (one per line)"></textarea>
+    <p class="note">Note: The first website will be used as the default.</p>
+  </div>
+
+  <!-- AI Selection -->
+  <div class="section">
+    <h2>AI Selection</h2>
+    <div class="radio-container">
+      <label><input type="radio" name="aiSelection" value="openai" checked> OpenAI</label>
+      <label><input type="radio" name="aiSelection" value="groq"> GROQ</label>
+      <label><input type="radio" name="aiSelection" value="gemini"> Gemini</label>
+    </div>
+
+    <!-- OpenAI Options -->
+    <div id="openaiOptions">
+      <label for="openaiApiKey">OpenAI API Key:</label>
+      <input type="text" id="openaiApiKey" placeholder="Enter OpenAI API Key">
+    </div>
+
+    <!-- GROQ Options -->
+    <div id="groqOptions" style="display: none;">
+      <label for="groqApiKey">GROQ API Key:</label>
+      <input type="text" id="groqApiKey" placeholder="Enter GROQ API Key">
+      <label for="groqModel">GROQ Model:</label>
+      <select id="groqModel">
+        <option value="llama3-8b-8192">llama3-8b-8192</option>
+        <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+        <option value="gemma2-9b-it">gemma2-9b-it</option>
+      </select>
+    </div>
+
+    <!-- Gemini Options -->
+    <div id="geminiOptions" style="display: none;">
+      <label for="geminiApiKey">Gemini API Key:</label>
+      <input type="text" id="geminiApiKey" placeholder="Enter Gemini API Key">
+      <label for="geminiModel">Gemini Model:</label>
+      <select id="geminiModel">
+        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Save Button -->
+  <div class="button-container">
+    <button id="save">Save Settings</button>
+  </div>
+
   <script src="settings.js"></script>
 </body>
 </html>
