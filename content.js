@@ -5,10 +5,41 @@
 // Give a subset of sites to choose from
 // perhaps user providing a list of websites and in what context they prefer them could be a good addition
 // making it moveable/sticky will help
+class GoogleGenerativeAI {
+    constructor(apiKey) {
+        this.apiKey = apiKey;
+        this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+    }
 
+    getGenerativeModel({ model }) {
+        return {
+            generateContent: async (prompt) => {
+                const response = await fetch(`${this.baseUrl}/models/${model}:generateContent?key=${this.apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }]
+                    })
+                });
 
+                const data = await response.json();
+                return {
+                    response: {
+                        text: () => data.candidates[0].content.parts[0].text
+                    }
+                };
+            }
+        };
+    }
+}
 
-const isLocal = false; // make it true when testing localhost server, on production false
+const isLocal = true; // make it true when testing localhost server, on production false
 let isDarkMode = false;
 let linkColorDark = '#99c3ff';
 let linkColorLight = 'blue';
@@ -328,9 +359,12 @@ function updateSidebar(results) {
 function updateSummary(summary) {
     unblurSummary();
     const summaryElement = document.getElementById('summary-element');
-  const summaryReplaced = summary.replace(/<(\d+)>/g, (match, number) => {
-    return `<a style="color: ${isDarkMode ? linkColorDark : linkColorLight};" href="#result-${number}">[${number}]</a>`;
-  });
+    const summaryReplaced = summary.replace(/<(\d+(?:\s*,\s*\d+)*)>/g, (match, numbers) => {
+        return numbers.split(',')
+            .map(num => num.trim())
+            .map(num => `<a style="color: ${isDarkMode ? linkColorDark : linkColorLight};" href="#result-${num}">[${num}]</a>`)
+            .join(' ');
+    });
     if (summaryElement) {
         summaryElement.innerHTML = `
         <p>${summaryReplaced}</p>
@@ -361,105 +395,6 @@ function parseSearchResults(html) {
     return results;
 }
 
-async function summarizeResults_own_key(results, searchQuery) {
-
-
-    if(!summaryEnabled){
-        //console.log("Summary disabled");
-        updateSummary('');
-        return;
-    }
-
-    if(!openaiApiKey){
-       // console.log("No API key");
-        updateSummary(`<strong>Add your OpenAI API keys to summarize results</strong> (or disable summary) by clicking on the extension icon. <a href="https://www.youtube.com/watch?v=Hzz7V19bVVw" target="_blank">Here's how summaries look like.</a>`);
-        return;
-        
-    }
-
-    const titles = results.map(result => result.title).join('\n');
-    const snippets = results.map(result => result.description).join('\n');
-
-    let snippet = '';
-    let i =1;
-
-    results.forEach(result => {
-        snippet += `<${i++}> ${result.title}: ${result.description}\n`;
-    });
-
-
-    const prompt = `You will be given search results from discussion forums like reddit in the format:
-    <result-index> result-title: result-description
-    
-    You need to summarize the search results and cite relevant results inline like this <result-index>. Your summary needs to be simple, useful and direct. Assume summary is all that a user has access to. So don't do an academic job of summarizing, rather try to help.
-    
-    IMPORTANT: get straight to the point. Don't say "search results say.."
-    
-    Search query: ${searchQuery}
-    ${snippet}
-    `;
-
-    //const prompt = `Please summarize the following search results:\n\n${snippet}`;
-
-    //const myopenaiApiKey = await returnOpenAIKey();
-    //console.log("My Key: ", myopenaiApiKey);
-
-    //console.log("Using local summary ", openaiApiKey);
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${openaiApiKey}`
-        },
-        body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0,
-            stream: true
-        })
-    });
-
-    //console.log(response);
-    if (!response.ok) {
-        updateSummary(
-          'Either your OpenAI credits are exhausted or you have entered the wrong OpenAI token'
-        );
-        return;
-      }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let summary = '';
-
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-            if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') {
-                    return summary;
-                }
-                try {
-                    const { choices } = JSON.parse(data);
-                    const { delta } = choices[0];
-                    if (delta.content) {
-                        summary += delta.content;
-                        updateSummary(summary);
-                    }
-                } catch (error) {
-                    console.error('Error parsing API response:', error);
-                }
-            }
-        }
-    }
-}
-
 async function updateSidebarWithResponse(response, searchQuery){
     if (response && response.html) {
         const html = response.html;
@@ -477,10 +412,118 @@ async function updateSidebarWithResponse(response, searchQuery){
         updateSidebar(results);
 
         //console.log('Summarizing search results');
-        const summary = await summarizeResults_own_key(results, searchQuery);
+        const summary = await summarizeResults(results, searchQuery);
         //console.log('Summary:', summary);
     } else {
         console.log('No results found.');
+    }
+}
+
+async function getApiProvider() {
+    return new Promise((resolve) => {
+        chrome.storage.sync.get('apiProvider', (data) => {
+            resolve(data.apiProvider || 'gemini');
+        });
+    });
+}
+
+async function summarizeResults(results, searchQuery) {
+    if (!summaryEnabled) {
+        updateSummary('');
+        return;
+    }
+
+    const apiKey = openaiApiKey;
+
+    if (!apiKey) {
+        updateSummary('<strong>Add your API key to summarize results</strong> by clicking on the extension icon.');
+        return;
+    }
+    const titles = results.map(result => result.title).join('\n');
+    const snippets = results.map(result => result.description).join('\n');
+
+    let snippet = '';
+    let i =1;
+
+    results.forEach(result => {
+        snippet += `<${i++}> ${result.title}: ${result.description}\n`;
+    });
+
+    const prompt = `You will be given search results from discussion forums like reddit in the format:
+    <result-index> result-title: result-description
+    
+    You need to summarize the search results and cite relevant results inline like this <result-index>. Your summary needs to be simple, useful and direct. Assume summary is all that a user has access to. So don't do an academic job of summarizing, rather try to help.
+    
+    IMPORTANT: get straight to the point. Don't say "search results say.."
+    
+    Search query: ${searchQuery}
+    ${snippet}`;
+
+    const apiProvider = await getApiProvider();
+    try {
+        let summary = '';
+        if (apiProvider === 'openai') {
+            // OpenAI API
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0,
+                    stream: true,
+                }),
+            });
+
+            if (!response.ok) {
+                updateSummary('Either your OpenAI credits are exhausted or you have entered the wrong OpenAI token');
+                return;
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') {
+                            unblurSummary();
+                            return;
+                        }
+                        try {
+                            const { choices } = JSON.parse(data);
+                            const { delta } = choices[0];
+                            if (delta.content) {
+                                summary += delta.content;
+                                updateSummary(summary);
+                            }
+                        } catch (error) {
+                            console.error('Error parsing API response:', error);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Gemini API
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            const result = await model.generateContent(prompt);
+            summary = await result.response.text();
+        }
+        updateSummary(summary);
+    } catch (error) {
+        console.error('Error generating summary:', error);
+        updateSummary('Error generating summary. Please check your API key and try again.');
     }
 }
 
