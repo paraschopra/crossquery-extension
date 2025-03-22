@@ -39,7 +39,7 @@ class GoogleGenerativeAI {
     }
 }
 
-const isLocal = true; // make it true when testing localhost server, on production false
+const isLocal = false; // make it true when testing localhost server, on production false
 let isDarkMode = false;
 let linkColorDark = '#99c3ff';
 let linkColorLight = 'blue';
@@ -206,9 +206,6 @@ sidebar.appendChild(closeButton);
                 const searchQuery = searchInput.value;
 
                 try {
-
-
-                    
                     //console.log("Clicked on", website, "with query ", searchQuery);
                     hideSidebarStuff();
                     const response = await chrome.runtime.sendMessage({
@@ -217,7 +214,7 @@ sidebar.appendChild(closeButton);
                         website: website
                     });
                     unblurResults();
-                    updateSidebarWithResponse(response);
+                    updateSidebarWithResponse(response, searchQuery);
 
                     // Remove highlighting from all website links
                     const allWebsiteLinks = websiteContainer.querySelectorAll('a');
@@ -375,47 +372,69 @@ function updateSummary(summary) {
 function parseSearchResults(html) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
-
-    const searchResults = doc.querySelectorAll('.g');
+    
+    // Try multiple possible selectors for Google results
+    const searchResults = doc.querySelectorAll('.g, .Gx5Zad, [data-sokoban-container], .MjjYud, .v7W49e, .hlcw0c');
+    console.log('Found search results:', searchResults.length);
+    
     const results = Array.from(searchResults).map(result => {
-        const titleElement = result.querySelector('h3');
-        const linkElement = result.querySelector('a');
-        const descriptionElement = result.querySelectorAll("span");
-        //console.log(descriptionElement);
-        //const snippetElements = result.querySelectorAll('.g span:not([class])');
-
+        // Try multiple possible selectors for title
+        const titleElement = result.querySelector('h3, .DKV0Md, .LC20lb');
+        
+        // Try multiple possible selectors for links
+        const linkElement = result.querySelector('a[href^="http"]');
+        
+        // Try multiple possible selectors for description
+        const descElement = result.querySelector('.VwiC3b, .yXK7lf, .s3v9rd, .lEBKkf, .Uroaid');
+        let description = '';
+        
+        if (descElement) {
+            description = descElement.textContent;
+        } else {
+            // Fallback to the old method
+            const descriptionElements = result.querySelectorAll("span");
+            if (descriptionElements.length > 0) {
+                description = descriptionElements[descriptionElements.length-1].textContent;
+            }
+        }
+        
         const title = titleElement ? titleElement.textContent : '';
         const link = linkElement ? linkElement.href : '';
         
-        const description = (descriptionElement.length!=0) ? descriptionElement[descriptionElement.length-1].textContent : '';
-
         return { title, link, description };
-    });
-
+    }).filter(r => r.title && r.link); // Filter out incomplete results
+    
     return results;
 }
 
 async function updateSidebarWithResponse(response, searchQuery){
     if (response && response.html) {
         const html = response.html;
-        //console.log('Parsing search results');
+        console.log('Parsing search results');
         const results = parseSearchResults(html);
 
         if (results.length === 0) {
             // No results found
             updateSidebar([]);
-            updateSummary('No results found.');
+            updateSummary('No results found. Google may have changed their page structure or blocked the request. Try refreshing the page.');
+            console.error('No search results found in the HTML. Google may have changed their page structure.');
             return;
         }
 
-        //console.log('Search results:', results);
+        console.log('Search results found:', results.length);
         updateSidebar(results);
 
-        //console.log('Summarizing search results');
+        console.log('Summarizing search results');
         const summary = await summarizeResults(results, searchQuery);
-        //console.log('Summary:', summary);
+        console.log('Summary generated successfully');
+    } else if (response && response.error) {
+        console.error('Error received:', response.error);
+        updateSidebar([]);
+        updateSummary(`Error: ${response.error}. Please refresh and try again.`);
     } else {
-        console.log('No results found.');
+        console.error('No HTML in response:', response);
+        updateSidebar([]);
+        updateSummary('No results found. There was an error processing the search. Please refresh and try again.');
     }
 }
 
