@@ -11,14 +11,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       async function performSearch() {
         try {
           const response = await fetch(searchUrl);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+          }
+          
           const html = await response.text();
   
           console.log('Sending HTML response to content script');
-          console.log(html);
+          // Don't log the entire HTML as it's too large
+          console.log('HTML size:', html.length);
           sendResponse({ html });
         } catch (error) {
           console.error('Error:', error);
-          sendResponse({ html: null });
+          sendResponse({ error: error.message, html: null });
         }
       }
   
