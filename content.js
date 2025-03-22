@@ -7,6 +7,7 @@
 // making it moveable/sticky will help
 class GoogleGenerativeAI {
     constructor(apiKey) {
+        console.log('[CrossQuery:AI] Initializing GoogleGenerativeAI');
         this.apiKey = apiKey;
         this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
     }
@@ -14,6 +15,7 @@ class GoogleGenerativeAI {
     getGenerativeModel({ model }) {
         return {
             generateContent: async (prompt) => {
+                console.log('[CrossQuery:AI] Generating content with model:', model);
                 const response = await fetch(`${this.baseUrl}/models/${model}:generateContent?key=${this.apiKey}`, {
                     method: 'POST',
                     headers: {
@@ -29,6 +31,7 @@ class GoogleGenerativeAI {
                 });
 
                 const data = await response.json();
+                console.log('[CrossQuery:AI] Generated content received');
                 return {
                     response: {
                         text: () => data.candidates[0].content.parts[0].text
@@ -144,7 +147,7 @@ function returnOpenAIKey() {
 }
 
 function createSidebar() {
-
+    console.log('[CrossQuery:UI] Creating sidebar');
     const sidebar = document.createElement('div');
     sidebar.id = 'custom-sidebar';
     sidebar.style.position = 'absolute';
@@ -195,6 +198,7 @@ sidebar.appendChild(closeButton);
 
     // Populate website options from user preferences
     chrome.storage.sync.get('preferredWebsites', (data) => {
+        console.log('[CrossQuery:UI] Loading preferred websites:', data.preferredWebsites);
         const websites = data.preferredWebsites || ['reddit.com', 'ycombinator.com'];
         websites.forEach((website, index) => {
             const websiteLink = document.createElement('a');
@@ -206,16 +210,14 @@ sidebar.appendChild(closeButton);
                 const searchQuery = searchInput.value;
 
                 try {
-
-
-                    
-                    //console.log("Clicked on", website, "with query ", searchQuery);
+                    console.log('[CrossQuery:Search] Initiating search:', { query: searchQuery, website });
                     hideSidebarStuff();
                     const response = await chrome.runtime.sendMessage({
                         action: 'performSearch',
                         query: searchQuery,
                         website: website
                     });
+                    console.log('[CrossQuery:Search] Search response received');
                     unblurResults();
                     updateSidebarWithResponse(response);
 
@@ -234,7 +236,7 @@ sidebar.appendChild(closeButton);
                     
 
                 } catch (error) {
-                    console.error('Error sending message to background.js:', error);
+                    console.error('[CrossQuery:Search] Error during search:', error);
                 }
             });
 
@@ -373,6 +375,7 @@ function updateSummary(summary) {
 }
 
 function parseSearchResults(html) {
+    console.log('[CrossQuery:Parser] Starting to parse search results');
     // console.log('[CrossQuery] Starting to parse search results HTML');
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
@@ -500,15 +503,18 @@ async function updateSidebarWithResponse(response, searchQuery){
         const results = parseSearchResults(html);
 
         if (results.length === 0) {
+            console.log('[CrossQuery:UI] No results found');
             // console.log('[CrossQuery] No results found after parsing');
             updateSidebar([]);
             updateSummary('No results found.');
             return;
         }
 
+        console.log('[CrossQuery:UI] Updating sidebar with results:', results.length);
         // console.log('[CrossQuery] Updating sidebar with', results.length, 'results');
         updateSidebar(results);
 
+        console.log('[CrossQuery:UI] Generating summary');
         // console.log('[CrossQuery] Starting to summarize search results');
         const summary = await summarizeResults(results, searchQuery);
         // console.log('[CrossQuery] Summary generation complete');
@@ -528,7 +534,9 @@ async function getApiProvider() {
 }
 
 async function summarizeResults(results, searchQuery) {
+    console.log('[CrossQuery:Summary] Starting summarization');
     if (!summaryEnabled) {
+        console.log('[CrossQuery:Summary] Summary disabled');
         updateSummary('');
         return;
     }
@@ -536,6 +544,7 @@ async function summarizeResults(results, searchQuery) {
     const apiKey = openaiApiKey;
 
     if (!apiKey) {
+        console.log('[CrossQuery:Summary] No API key found');
         updateSummary('<strong>Add your API key to summarize results</strong> by clicking on the extension icon.');
         return;
     }
@@ -622,7 +631,7 @@ async function summarizeResults(results, searchQuery) {
         }
         updateSummary(summary);
     } catch (error) {
-        console.error('Error generating summary:', error);
+        console.error('[CrossQuery:Summary] Error during summarization:', error);
         updateSummary('Error generating summary. Please check your API key and try again.');
     }
 }

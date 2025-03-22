@@ -1,23 +1,44 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'performSearch') {
+      console.log('[CrossQuery:Background] Search request received:', { query: message.query, website: message.website });
       const searchQuery = message.query;
       const website = message.website;
       //const modifiedQuery = `${searchQuery} (site:ycombinator.com OR site:reddit.com)`;
       const modifiedQuery = `${searchQuery} site:${website}`;
-      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(modifiedQuery)}`;
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(modifiedQuery)}&hl=en`;
   
-      //console.log('Received search request:', message);
+      console.log('[CrossQuery:Background] Fetching from URL:', searchUrl);
   
       async function performSearch() {
         try {
-          const response = await fetch(searchUrl);
+          const response = await fetch(searchUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.5',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
+          
+          if (!response.ok) {
+            console.error('[CrossQuery:Background] Search request failed:', response.status, response.statusText);
+            sendResponse({ html: null });
+            return;
+          }
+
           const html = await response.text();
-  
-          console.log('Sending HTML response to content script');
-          console.log(html);
+          console.log('[CrossQuery:Background] Search response received, length:', html.length);
+          
+          if (html.includes('detected unusual traffic') || html.includes('CAPTCHA')) {
+            console.error('[CrossQuery:Background] Google detected unusual traffic');
+            sendResponse({ html: null, error: 'Google detected unusual traffic. Please try again later.' });
+            return;
+          }
+
           sendResponse({ html });
         } catch (error) {
-          console.error('Error:', error);
+          console.error('[CrossQuery:Background] Search error:', error);
           sendResponse({ html: null });
         }
       }
