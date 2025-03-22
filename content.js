@@ -5,42 +5,6 @@
 // Give a subset of sites to choose from
 // perhaps user providing a list of websites and in what context they prefer them could be a good addition
 // making it moveable/sticky will help
-class GoogleGenerativeAI {
-    constructor(apiKey) {
-        console.log('[CrossQuery:AI] Initializing GoogleGenerativeAI');
-        this.apiKey = apiKey;
-        this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
-    }
-
-    getGenerativeModel({ model }) {
-        return {
-            generateContent: async (prompt) => {
-                console.log('[CrossQuery:AI] Generating content with model:', model);
-                const response = await fetch(`${this.baseUrl}/models/${model}:generateContent?key=${this.apiKey}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: prompt
-                            }]
-                        }]
-                    })
-                });
-
-                const data = await response.json();
-                console.log('[CrossQuery:AI] Generated content received');
-                return {
-                    response: {
-                        text: () => data.candidates[0].content.parts[0].text
-                    }
-                };
-            }
-        };
-    }
-}
 
 const isLocal = true; // make it true when testing localhost server, on production false
 let isDarkMode = false;
@@ -551,12 +515,23 @@ async function summarizeResults(results, searchQuery) {
             }
         } else {
             // Gemini API
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-            const result = await model.generateContent(prompt);
-            summary = await result.response.text();
+            console.log('[CrossQuery:Summary] Sending message to background for Gemini API');
+            chrome.runtime.sendMessage({
+                action: 'generateContent',
+                apiKey: apiKey,
+                model: 'gemini-2.0-flash-lite-preview-02-05',
+                prompt: prompt
+            }, (response) => {
+                if (response.error) {
+                    console.error('[CrossQuery:Summary] Error from background:', response.error);
+                    updateSummary('Error generating summary. Please check your API key and try again.');
+                } else {
+                    console.log('[CrossQuery:Summary] Received summary from background');
+                    updateSummary(response.summary);
+                }
+            });
+
         }
-        updateSummary(summary);
     } catch (error) {
         console.error('[CrossQuery:Summary] Error during summarization:', error);
         updateSummary('Error generating summary. Please check your API key and try again.');
