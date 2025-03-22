@@ -1,3 +1,5 @@
+import {GoogleGenerativeAI} from './dist/geneartive-ai-bundle.js';
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'performSearch') {
       console.log('[CrossQuery:Background] Search request received:', { query: message.query, website: message.website });
@@ -46,5 +48,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       performSearch();
   
       return true;
+    } else if (message.action === 'generateContent') {
+        console.log('[CrossQuery:Background] Generate content request received');
+        const genAI = new GoogleGenerativeAI(message.apiKey);
+        const model = genAI.getGenerativeModel({ model: message.model });
+        model.generateContent(message.prompt).then(result => {
+            console.log('[CrossQuery:Background] Sending generated content back to content script');
+            sendResponse({ summary: result.response.text() });
+        }).catch(error => {
+            console.error('[CrossQuery:Background] Error generating content:', error);
+            sendResponse({ error: error.message });
+        });
+        return true; // Keep the message channel open for async response
     }
-  });
+});
