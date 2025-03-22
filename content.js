@@ -376,7 +376,7 @@ function parseSearchResults(html) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    const searchResults = doc.querySelectorAll('.g');
+    const searchResults = doc.getElementById('rso').children;
     const results = Array.from(searchResults).map(result => {
         const titleElement = result.querySelector('h3');
         const linkElement = result.querySelector('a');
