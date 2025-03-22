@@ -7,6 +7,7 @@
 // making it moveable/sticky will help
 class GoogleGenerativeAI {
     constructor(apiKey) {
+        console.log('[CrossQuery:AI] Initializing GoogleGenerativeAI');
         this.apiKey = apiKey;
         this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
     }
@@ -14,6 +15,7 @@ class GoogleGenerativeAI {
     getGenerativeModel({ model }) {
         return {
             generateContent: async (prompt) => {
+                console.log('[CrossQuery:AI] Generating content with model:', model);
                 const response = await fetch(`${this.baseUrl}/models/${model}:generateContent?key=${this.apiKey}`, {
                     method: 'POST',
                     headers: {
@@ -29,6 +31,7 @@ class GoogleGenerativeAI {
                 });
 
                 const data = await response.json();
+                console.log('[CrossQuery:AI] Generated content received');
                 return {
                     response: {
                         text: () => data.candidates[0].content.parts[0].text
@@ -144,7 +147,7 @@ function returnOpenAIKey() {
 }
 
 function createSidebar() {
-
+    console.log('[CrossQuery:UI] Creating sidebar');
     const sidebar = document.createElement('div');
     sidebar.id = 'custom-sidebar';
     sidebar.style.position = 'absolute';
@@ -195,6 +198,7 @@ sidebar.appendChild(closeButton);
 
     // Populate website options from user preferences
     chrome.storage.sync.get('preferredWebsites', (data) => {
+        console.log('[CrossQuery:UI] Loading preferred websites:', data.preferredWebsites);
         const websites = data.preferredWebsites || ['reddit.com', 'ycombinator.com'];
         websites.forEach((website, index) => {
             const websiteLink = document.createElement('a');
@@ -206,16 +210,14 @@ sidebar.appendChild(closeButton);
                 const searchQuery = searchInput.value;
 
                 try {
-
-
-                    
-                    //console.log("Clicked on", website, "with query ", searchQuery);
+                    console.log('[CrossQuery:Search] Initiating search:', { query: searchQuery, website });
                     hideSidebarStuff();
                     const response = await chrome.runtime.sendMessage({
                         action: 'performSearch',
                         query: searchQuery,
                         website: website
                     });
+                    console.log('[CrossQuery:Search] Search response received');
                     unblurResults();
                     updateSidebarWithResponse(response);
 
@@ -234,7 +236,7 @@ sidebar.appendChild(closeButton);
                     
 
                 } catch (error) {
-                    console.error('Error sending message to background.js:', error);
+                    console.error('[CrossQuery:Search] Error during search:', error);
                 }
             });
 
@@ -373,49 +375,80 @@ function updateSummary(summary) {
 }
 
 function parseSearchResults(html) {
+    console.log('[CrossQuery:Parser] Starting to parse search results');
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    const searchResults = doc.querySelectorAll('.g');
+    // Updated selectors to match Google's latest structure
+    const searchResults = doc.querySelectorAll('div[data-header-feature], div[data-content-feature], div.g, div[jscontroller][data-sokoban-container], div[data-snc]');
+    console.log('[CrossQuery:Parser] Found search result elements:', searchResults.length);
+    
     const results = Array.from(searchResults).map(result => {
-        const titleElement = result.querySelector('h3');
-        const linkElement = result.querySelector('a');
-        const descriptionElement = result.querySelectorAll("span");
-        //console.log(descriptionElement);
-        //const snippetElements = result.querySelectorAll('.g span:not([class])');
+        // Try multiple possible selectors for title and link
+        const titleElement = 
+            result.querySelector('h3') || 
+            result.querySelector('[role="heading"]') ||
+            result.querySelector('a > h3') ||
+            result.querySelector('div[role="heading"]');
 
-        const title = titleElement ? titleElement.textContent : '';
-        const link = linkElement ? linkElement.href : '';
+        const linkElement = 
+            result.querySelector('a[ping]') ||
+            result.querySelector('a[data-ved]') ||
+            result.querySelector('div[data-snc] > a') ||
+            result.querySelector('a[href]:not([href="#"])');
+
+        // Try multiple possible selectors for description
+        const descriptionElement = 
+            result.querySelector('div[data-content-feature="1"]') ||
+            result.querySelector('div.VwiC3b') ||
+            result.querySelector('div[style*="webkit-line-clamp"]') ||
+            result.querySelector('div[data-sncf="1"]') ||
+            result.querySelector('div[data-snf="nke7rc"]');
         
-        const description = (descriptionElement.length!=0) ? descriptionElement[descriptionElement.length-1].textContent : '';
+        if (!titleElement || !linkElement) {
+            console.log('[CrossQuery:Parser] Skipping result - missing title or link', {
+                hasTitle: !!titleElement,
+                hasLink: !!linkElement
+            });
+            return null;
+        }
+
+        const title = titleElement.textContent.trim();
+        const link = linkElement.href;
+        const description = descriptionElement ? descriptionElement.textContent.trim() : '';
+
+        // Log successful parsing of each result
+        console.log('[CrossQuery:Parser] Successfully parsed result:', {
+            title: title.substring(0, 50) + '...',
+            hasDescription: !!description
+        });
 
         return { title, link, description };
-    });
+    }).filter(result => result !== null);
 
+    console.log('[CrossQuery:Parser] Successfully parsed results:', results.length);
     return results;
 }
 
-async function updateSidebarWithResponse(response, searchQuery){
+async function updateSidebarWithResponse(response, searchQuery) {
+    console.log('[CrossQuery:UI] Updating sidebar with response');
     if (response && response.html) {
-        const html = response.html;
-        //console.log('Parsing search results');
-        const results = parseSearchResults(html);
+        const results = parseSearchResults(response.html);
 
         if (results.length === 0) {
-            // No results found
+            console.log('[CrossQuery:UI] No results found');
             updateSidebar([]);
             updateSummary('No results found.');
             return;
         }
 
-        //console.log('Search results:', results);
+        console.log('[CrossQuery:UI] Updating sidebar with results:', results.length);
         updateSidebar(results);
 
-        //console.log('Summarizing search results');
+        console.log('[CrossQuery:UI] Generating summary');
         const summary = await summarizeResults(results, searchQuery);
-        //console.log('Summary:', summary);
     } else {
-        console.log('No results found.');
+        console.log('[CrossQuery:UI] No HTML in response');
     }
 }
 
@@ -428,7 +461,9 @@ async function getApiProvider() {
 }
 
 async function summarizeResults(results, searchQuery) {
+    console.log('[CrossQuery:Summary] Starting summarization');
     if (!summaryEnabled) {
+        console.log('[CrossQuery:Summary] Summary disabled');
         updateSummary('');
         return;
     }
@@ -436,6 +471,7 @@ async function summarizeResults(results, searchQuery) {
     const apiKey = openaiApiKey;
 
     if (!apiKey) {
+        console.log('[CrossQuery:Summary] No API key found');
         updateSummary('<strong>Add your API key to summarize results</strong> by clicking on the extension icon.');
         return;
     }
@@ -522,7 +558,7 @@ async function summarizeResults(results, searchQuery) {
         }
         updateSummary(summary);
     } catch (error) {
-        console.error('Error generating summary:', error);
+        console.error('[CrossQuery:Summary] Error during summarization:', error);
         updateSummary('Error generating summary. Please check your API key and try again.');
     }
 }
