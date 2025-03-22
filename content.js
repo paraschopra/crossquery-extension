@@ -146,6 +146,14 @@ function returnOpenAIKey() {
     });
 }
 
+function returnClaudeKey() {
+    return new Promise((resolve) => {
+        chrome.storage.sync.get('claudeApiKey', (data) => {
+            resolve(data.claudeApiKey);
+        });
+    });
+}
+
 function createSidebar() {
     console.log('[CrossQuery:UI] Creating sidebar');
     const sidebar = document.createElement('div');
@@ -541,13 +549,23 @@ async function summarizeResults(results, searchQuery) {
         return;
     }
 
-    const apiKey = openaiApiKey;
+    const apiProvider = await getApiProvider();
+    let apiKey;
+
+    if (apiProvider === 'openai') {
+        apiKey = openaiApiKey;
+    } else if (apiProvider === 'claude') {
+        apiKey = await returnClaudeKey();
+    } else {
+        apiKey = openaiApiKey; // For Gemini
+    }
 
     if (!apiKey) {
         console.log('[CrossQuery:Summary] No API key found');
         updateSummary('<strong>Add your API key to summarize results</strong> by clicking on the extension icon.');
         return;
     }
+
     const titles = results.map(result => result.title).join('\n');
     const snippets = results.map(result => result.description).join('\n');
 
@@ -568,7 +586,6 @@ async function summarizeResults(results, searchQuery) {
     Search query: ${searchQuery}
     ${snippet}`;
 
-    const apiProvider = await getApiProvider();
     try {
         let summary = '';
         if (apiProvider === 'openai') {
@@ -622,6 +639,34 @@ async function summarizeResults(results, searchQuery) {
                     }
                 }
             }
+        } else if (apiProvider === 'claude') {
+            // Claude API
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                    "anthropic-dangerous-direct-browser-access": "true",
+                },
+                body: JSON.stringify({
+                    model: 'claude-3-haiku-20240307',
+                    max_tokens: 1000,
+                    messages: [{
+                        role: 'user',
+                        content: prompt
+                    }]
+                })
+            });
+
+            if (!response.ok) {
+                updateSummary('Either your Claude credits are exhausted or you have entered the wrong Claude token');
+                return;
+            }
+
+            const data = await response.json();
+            summary = data.content[0].text;
+            updateSummary(summary);
         } else {
             // Gemini API
             const genAI = new GoogleGenerativeAI(apiKey);
