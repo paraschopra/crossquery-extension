@@ -6,20 +6,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveButton = document.getElementById('save');
     const openaiRadio = document.getElementById('openaiRadio');
     const geminiRadio = document.getElementById('geminiRadio');
+    const claudeRadio = document.getElementById('claudeRadio');
   
     // Load saved settings from Chrome storage
-    chrome.storage.sync.get(['preferredWebsites', 'openaiApiKey', 'searchEnabled', 'summaryEnabled', 'apiProvider'], (data) => {
+    chrome.storage.sync.get(['preferredWebsites', 'openaiApiKey', 'claudeApiKey', 'searchEnabled', 'summaryEnabled', 'apiProvider'], (data) => {
       const websites = data.preferredWebsites || ['reddit.com', 'ycombinator.com'];
       websitesTextarea.value = websites.join('\n');
-      apiKeyInput.value = data.openaiApiKey || '';
       searchToggle.checked = data.searchEnabled !== false; // default to true
       summaryToggle.checked = data.summaryEnabled !== false; // default to true
       const apiProvider = data.apiProvider || 'gemini';
+      
       if (apiProvider === 'openai') {
         openaiRadio.checked = true;
+        apiKeyInput.value = data.openaiApiKey || '';
+      } else if (apiProvider === 'claude') {
+        claudeRadio.checked = true;
+        apiKeyInput.value = data.claudeApiKey || '';
       } else {
         geminiRadio.checked = true;
+        apiKeyInput.value = data.openaiApiKey || '';
       }
+    });
+
+    // Update API key input when radio buttons change
+    openaiRadio.addEventListener('change', () => {
+      chrome.storage.sync.get(['openaiApiKey'], (data) => {
+        apiKeyInput.value = data.openaiApiKey || '';
+      });
+    });
+
+    claudeRadio.addEventListener('change', () => {
+      chrome.storage.sync.get(['claudeApiKey'], (data) => {
+        apiKeyInput.value = data.claudeApiKey || '';
+      });
+    });
+
+    geminiRadio.addEventListener('change', () => {
+      chrome.storage.sync.get(['openaiApiKey'], (data) => {
+        apiKeyInput.value = data.openaiApiKey || '';
+      });
     });
   
     saveButton.addEventListener('click', () => {
@@ -27,12 +52,24 @@ document.addEventListener('DOMContentLoaded', () => {
       const apiKey = apiKeyInput.value.trim();
       const searchEnabled = searchToggle.checked;
       const summaryEnabled = summaryToggle.checked;
-      const apiProvider = openaiRadio.checked ? 'openai' : 'gemini';
+      let apiProvider;
+      let keyToSave = {};
+
+      if (openaiRadio.checked) {
+        apiProvider = 'openai';
+        keyToSave = { openaiApiKey: apiKey };
+      } else if (claudeRadio.checked) {
+        apiProvider = 'claude';
+        keyToSave = { claudeApiKey: apiKey };
+      } else {
+        apiProvider = 'gemini';
+        keyToSave = { openaiApiKey: apiKey };
+      }
   
       // Save settings to Chrome storage
       chrome.storage.sync.set({
         preferredWebsites: websites,
-        openaiApiKey: apiKey,
+        ...keyToSave,
         searchEnabled,
         summaryEnabled,
         apiProvider

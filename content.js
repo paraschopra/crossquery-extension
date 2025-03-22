@@ -146,6 +146,14 @@ function returnOpenAIKey() {
     });
 }
 
+function returnClaudeKey() {
+    return new Promise((resolve) => {
+        chrome.storage.sync.get('claudeApiKey', (data) => {
+            resolve(data.claudeApiKey);
+        });
+    });
+}
+
 function createSidebar() {
     console.log('[CrossQuery:UI] Creating sidebar');
     const sidebar = document.createElement('div');
@@ -376,79 +384,152 @@ function updateSummary(summary) {
 
 function parseSearchResults(html) {
     console.log('[CrossQuery:Parser] Starting to parse search results');
+    // console.log('[CrossQuery] Starting to parse search results HTML');
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    // Updated selectors to match Google's latest structure
-    const searchResults = doc.querySelectorAll('div[data-header-feature], div[data-content-feature], div.g, div[jscontroller][data-sokoban-container], div[data-snc]');
-    console.log('[CrossQuery:Parser] Found search result elements:', searchResults.length);
+    // Try multiple selectors that Google might be using
+    let searchResults = [];
     
-    const results = Array.from(searchResults).map(result => {
-        // Try multiple possible selectors for title and link
-        const titleElement = 
-            result.querySelector('h3') || 
-            result.querySelector('[role="heading"]') ||
-            result.querySelector('a > h3') ||
-            result.querySelector('div[role="heading"]');
+    // List of known selectors that Google has used
+    const selectors = [
+        'div.MjjYud',                    // Current selector
+        'div.g',                         // Older selector
+        'div[data-hveid]',               // Data attribute selector
+        'div[data-snf]',                 // Another data attribute
+        'div[data-snc]',                 // Another data attribute
+        'div[data-sncf]'                 // Another data attribute
+    ];
 
-        const linkElement = 
-            result.querySelector('a[ping]') ||
-            result.querySelector('a[data-ved]') ||
-            result.querySelector('div[data-snc] > a') ||
-            result.querySelector('a[href]:not([href="#"])');
-
-        // Try multiple possible selectors for description
-        const descriptionElement = 
-            result.querySelector('div[data-content-feature="1"]') ||
-            result.querySelector('div.VwiC3b') ||
-            result.querySelector('div[style*="webkit-line-clamp"]') ||
-            result.querySelector('div[data-sncf="1"]') ||
-            result.querySelector('div[data-snf="nke7rc"]');
+    // Try each selector until we find results
+    for (const selector of selectors) {
+        const results = doc.querySelectorAll(selector);
+        // console.log(`[CrossQuery] Found ${results.length} results with selector "${selector}"`);
         
-        if (!titleElement || !linkElement) {
-            console.log('[CrossQuery:Parser] Skipping result - missing title or link', {
-                hasTitle: !!titleElement,
-                hasLink: !!linkElement
-            });
-            return null;
+        if (results.length > 0) {
+            searchResults = results;
+            break;
         }
+    }
 
-        const title = titleElement.textContent.trim();
-        const link = linkElement.href;
+    // If no results found with selectors, try structural analysis
+    if (searchResults.length === 0) {
+        // console.log('[CrossQuery] No results found with selectors, trying structural analysis');
+        
+        // Find all h3 elements that are likely titles
+        const h3Elements = Array.from(doc.querySelectorAll('h3')).filter(h3 => {
+            // Filter out h3s that are likely not search results
+            const text = h3.textContent.trim();
+            return text.length > 10 && !text.includes('Google') && !text.includes('Search');
+        });
+        
+        // console.log('[CrossQuery] Found', h3Elements.length, 'potential title elements');
+        
+        // For each h3, find its container
+        searchResults = h3Elements.map(h3 => {
+            let container = h3;
+            // Go up the DOM tree to find a container that likely holds the full result
+            for (let i = 0; i < 5 && container.parentElement; i++) {
+                container = container.parentElement;
+                // If we find a div that contains both the h3 and a link, that's probably our result
+                if (container.querySelector('a[href]')) {
+                    break;
+                }
+            }
+            return container;
+        });
+    }
+
+    const results = Array.from(searchResults).map(result => {
+        // Try multiple ways to find the title
+        const titleElement = 
+            result.querySelector('h3.LC20lb') || 
+            result.querySelector('h3') ||
+            result.querySelector('a[jsname="UWckNb"] h3') ||
+            result.querySelector('a[data-ved] h3');
+
+        // Try multiple ways to find the link
+        const linkElement = 
+            result.querySelector('a[jsname="UWckNb"]') ||
+            result.querySelector('a[data-ved]') ||
+            result.querySelector('a[href]');
+
+        // Try multiple ways to find the description
+        const descriptionElement = 
+            result.querySelector('div.VwiC3b') ||
+            result.querySelector('div[data-sncf="1"]') ||
+            result.querySelector('div[style*="webkit-line-clamp"]') ||
+            result.querySelector('div[data-snc]');
+
+        const title = titleElement ? titleElement.textContent.trim() : '';
+        const link = linkElement ? linkElement.href : '';
         const description = descriptionElement ? descriptionElement.textContent.trim() : '';
 
-        // Log successful parsing of each result
-        console.log('[CrossQuery:Parser] Successfully parsed result:', {
-            title: title.substring(0, 50) + '...',
-            hasDescription: !!description
-        });
-
-        return { title, link, description };
+        // Only include results that have at least a title and link
+        if (title && link) {
+            // console.log('[CrossQuery] Parsed result:', { 
+            //     title: title.substring(0, 30) + (title.length > 30 ? '...' : ''), 
+            //     link,
+            //     descriptionLength: description.length 
+            // });
+            return { title, link, description };
+        }
+        return null;
     }).filter(result => result !== null);
 
-    console.log('[CrossQuery:Parser] Successfully parsed results:', results.length);
+    // console.log('[CrossQuery] Finished parsing', results.length, 'valid results');
+    
+    if (results.length === 0) {
+        // console.log('[CrossQuery] No valid results could be extracted. Debugging HTML structure:');
+        // console.log('[CrossQuery] Document title:', doc.title);
+        // console.log('[CrossQuery] Document structure:', doc.body.innerHTML.substring(0, 1000));
+    }
+
     return results;
 }
 
-async function updateSidebarWithResponse(response, searchQuery) {
-    console.log('[CrossQuery:UI] Updating sidebar with response');
+async function updateSidebarWithResponse(response, searchQuery){
+    // console.log('[CrossQuery] Processing search response for query:', searchQuery);
+    
+    if (!response) {
+        console.error('[CrossQuery] Response is null or undefined');
+        updateSidebar([]);
+        updateSummary('Error: No response received from search.');
+        return;
+    }
+    
+    if (response.error) {
+        console.error('[CrossQuery] Error in response:', response.error);
+        updateSidebar([]);
+        updateSummary(`Error: ${response.error}`);
+        return;
+    }
+    
     if (response && response.html) {
-        const results = parseSearchResults(response.html);
+        // console.log('[CrossQuery] Received HTML response of length:', response.html.length);
+        const html = response.html;
+        const results = parseSearchResults(html);
 
         if (results.length === 0) {
             console.log('[CrossQuery:UI] No results found');
+            // console.log('[CrossQuery] No results found after parsing');
             updateSidebar([]);
             updateSummary('No results found.');
             return;
         }
 
         console.log('[CrossQuery:UI] Updating sidebar with results:', results.length);
+        // console.log('[CrossQuery] Updating sidebar with', results.length, 'results');
         updateSidebar(results);
 
         console.log('[CrossQuery:UI] Generating summary');
+        // console.log('[CrossQuery] Starting to summarize search results');
         const summary = await summarizeResults(results, searchQuery);
+        // console.log('[CrossQuery] Summary generation complete');
     } else {
-        console.log('[CrossQuery:UI] No HTML in response');
+        console.error('[CrossQuery] No HTML content in response');
+        updateSidebar([]);
+        updateSummary('Error: No HTML content received from search.');
     }
 }
 
@@ -468,13 +549,23 @@ async function summarizeResults(results, searchQuery) {
         return;
     }
 
-    const apiKey = openaiApiKey;
+    const apiProvider = await getApiProvider();
+    let apiKey;
+
+    if (apiProvider === 'openai') {
+        apiKey = openaiApiKey;
+    } else if (apiProvider === 'claude') {
+        apiKey = await returnClaudeKey();
+    } else {
+        apiKey = openaiApiKey; // For Gemini
+    }
 
     if (!apiKey) {
         console.log('[CrossQuery:Summary] No API key found');
         updateSummary('<strong>Add your API key to summarize results</strong> by clicking on the extension icon.');
         return;
     }
+
     const titles = results.map(result => result.title).join('\n');
     const snippets = results.map(result => result.description).join('\n');
 
@@ -495,7 +586,6 @@ async function summarizeResults(results, searchQuery) {
     Search query: ${searchQuery}
     ${snippet}`;
 
-    const apiProvider = await getApiProvider();
     try {
         let summary = '';
         if (apiProvider === 'openai') {
@@ -549,6 +639,34 @@ async function summarizeResults(results, searchQuery) {
                     }
                 }
             }
+        } else if (apiProvider === 'claude') {
+            // Claude API
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                    "anthropic-dangerous-direct-browser-access": "true",
+                },
+                body: JSON.stringify({
+                    model: 'claude-3-haiku-20240307',
+                    max_tokens: 1000,
+                    messages: [{
+                        role: 'user',
+                        content: prompt
+                    }]
+                })
+            });
+
+            if (!response.ok) {
+                updateSummary('Either your Claude credits are exhausted or you have entered the wrong Claude token');
+                return;
+            }
+
+            const data = await response.json();
+            summary = data.content[0].text;
+            updateSummary(summary);
         } else {
             // Gemini API
             const genAI = new GoogleGenerativeAI(apiKey);
@@ -568,51 +686,69 @@ let summaryEnabled = true;
 
 
 window.addEventListener('load', async () => {
+    // console.log('[CrossQuery] Extension loaded');
 
     const searchEnabled = await isSearchEnabled();
-                    if (!searchEnabled) {
-                        console.log("Search disabled");
-                        return;
-                    }
-    //console.log("Search enabled: ", searchEnabled);
+    // console.log('[CrossQuery] Search enabled:', searchEnabled);
+    
+    if (!searchEnabled) {
+        // console.log('[CrossQuery] Search disabled in settings, exiting');
+        return;
+    }
 
     openaiApiKey = await returnOpenAIKey();
-    //console.log("Key: ", openaiApiKey);
+    // console.log('[CrossQuery] API key retrieved:', openaiApiKey ? 'Yes (key hidden)' : 'No');
 
     summaryEnabled = await isSummaryEnabled();
-    //console.log("Summary enabled: ", summaryEnabled);
+    // console.log('[CrossQuery] Summary enabled:', summaryEnabled);
 
     const urlParams = new URLSearchParams(window.location.search);
     const tbm = urlParams.get('tbm');
     const searchDiv = document.querySelector("div#search");
+    
     if (!searchDiv) {
-        console.log('Disabling sidebar on non-text search results page');
+        // console.log('[CrossQuery] Not on a search results page, exiting');
         return;
     }
 
+    // console.log('[CrossQuery] Creating sidebar');
     createSidebar(openaiApiKey);
-
-    //console.log("Detecting color scheme");
     detectColorScheme();
 
     const searchInput = document.querySelector('input[name="q"]');
+    if (!searchInput) {
+        // console.log('[CrossQuery] Search input not found, exiting');
+        return;
+    }
+    
     const searchQuery = searchInput.value;
+    // console.log('[CrossQuery] Detected search query:', searchQuery);
 
-    //console.log('Sending search request to background.js');
-
-    /*
+    // Uncomment and update the search section
+    // console.log('[CrossQuery] Sending search request to background.js for Reddit');
     try {
-        const response = await chrome.runtime.sendMessage({
+        // console.log('[CrossQuery] Requesting Reddit search');
+        const redditResponse = await chrome.runtime.sendMessage({
             action: 'performSearch',
             query: searchQuery,
             website: 'reddit.com'
         });
-
-        updateSidebarWithResponse(response);
-        //console.log('Received response from background.js:', response);
-  
+        // console.log('[CrossQuery] Received Reddit response:', redditResponse ? 'Yes' : 'No');
+        updateSidebarWithResponse(redditResponse, searchQuery);
+        
+        // Optionally add another search for ycombinator
+        // console.log('[CrossQuery] Requesting HackerNews search');
+        const ycombResponse = await chrome.runtime.sendMessage({
+            action: 'performSearch',
+            query: searchQuery,
+            website: 'news.ycombinator.com'
+        });
+        // console.log('[CrossQuery] Received HackerNews response:', ycombResponse ? 'Yes' : 'No');
+        // You would need additional logic to handle multiple responses
         
     } catch (error) {
-        console.error('Error sending message to background.js:', error);
-    }   */
+        console.error('[CrossQuery] Error sending message to background.js:', error);
+        updateSidebar([]);
+        updateSummary(`Error: ${error.message}`);
+    }
 });
